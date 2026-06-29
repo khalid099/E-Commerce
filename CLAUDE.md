@@ -283,7 +283,7 @@ Work in this exact sequence. Each item is a commit. Do not skip ahead.
 - [ ] **18. Storefront — checkout** — Stripe Elements, place order, success page.
 - [ ] **19. Storefront — orders** — order history list, order detail.
 - [x] **20. Admin — products** — CRUD table, create/edit form, image upload.
-- [ ] **21. Admin — orders** — all orders table, status update dropdown.
+- [x] **21. Admin — orders** — all orders table, status update dropdown.
 - [ ] **22. Admin — dashboard** — stats cards + revenue line chart (Recharts).
 
 ### Phase 7 — Tests & Polish

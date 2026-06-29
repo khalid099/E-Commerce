@@ -26,6 +26,13 @@ export interface OrderItem {
   lineTotal: number;
 }
 
+export interface OrderCustomer {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -39,7 +46,18 @@ export interface Order {
   stripePaymentIntentId: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Populated on admin endpoints only — who placed the order. */
+  customer?: OrderCustomer;
 }
+
+/** Valid status transitions for the order lifecycle. Empty array = terminal state. */
+export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  [OrderStatus.PENDING]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+  [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+  [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
+  [OrderStatus.DELIVERED]: [],
+  [OrderStatus.CANCELLED]: [],
+};
 
 export interface CreateOrderDto {
   shippingAddress: ShippingAddress;

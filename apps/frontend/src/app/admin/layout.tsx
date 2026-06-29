@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { Package, ArrowLeft, ShoppingBag, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const NAV_ITEMS = [{ href: '/admin/products', label: 'Products', icon: Package }];
+const NAV_ITEMS = [
+  { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/orders', label: 'Orders', icon: ClipboardList },
+];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

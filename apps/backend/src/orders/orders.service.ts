@@ -21,6 +21,16 @@ import type {
 
 const TAX_RATE = 0.1; // 10%
 
+// Order lifecycle: each status may only advance to an allowed next state.
+// Empty array = terminal state.
+const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  [OrderStatus.PENDING]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+  [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+  [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
+  [OrderStatus.DELIVERED]: [],
+  [OrderStatus.CANCELLED]: [],
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -59,6 +69,15 @@ export class OrdersService {
       stripePaymentIntentId: order.stripePaymentIntentId,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
+      // `user` relation is loaded only on admin endpoints.
+      customer: order.user
+        ? {
+            id: order.user.id,
+            email: order.user.email,
+            firstName: order.user.firstName,
+            lastName: order.user.lastName,
+          }
+        : undefined,
     };
   }
 
@@ -187,7 +206,7 @@ export class OrdersService {
 
     const [orders, total] = await this.orderRepo.findAndCount({
       where,
-      relations: ['items'],
+      relations: ['items', 'user'],
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -207,19 +226,39 @@ export class OrdersService {
     };
   }
 
+  async findAdminOrder(orderId: string): Promise<OrderResponse> {
+    const order = await this.orderRepo.findOne({
+      where: { id: orderId },
+      relations: ['items', 'user'],
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    return this.mapOrder(order);
+  }
+
   async updateOrderStatus(
     orderId: string,
     dto: UpdateOrderStatusDto,
   ): Promise<OrderResponse> {
     const order = await this.orderRepo.findOne({
       where: { id: orderId },
-      relations: ['items'],
+      relations: ['items', 'user'],
     });
 
     if (!order) throw new NotFoundException('Order not found');
 
-    order.status = dto.status;
-    await this.orderRepo.save(order);
+    // Enforce the order lifecycle: a status may only move to an allowed next state.
+    if (order.status !== dto.status) {
+      const allowed = ORDER_STATUS_TRANSITIONS[order.status] ?? [];
+      if (!allowed.includes(dto.status)) {
+        throw new BadRequestException(
+          `Cannot change order status from ${order.status} to ${dto.status}`,
+        );
+      }
+      order.status = dto.status;
+      await this.orderRepo.save(order);
+    }
 
     return this.mapOrder(order);
   }

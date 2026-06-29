@@ -63,6 +63,12 @@ export class AdminOrdersController {
     return this.ordersService.findAllOrders(query);
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: '[Admin] Get a single order with customer details' })
+  getOrder(@Param('id', ParseUUIDPipe) id: string) {
+    return this.ordersService.findAdminOrder(id);
+  }
+
   @Patch(':id/status')
   @ApiOperation({ summary: '[Admin] Update order status' })
   updateStatus(
