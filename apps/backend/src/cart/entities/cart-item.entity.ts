@@ -32,6 +32,13 @@ export class CartItem {
   @Column({ type: 'int' })
   quantity: number;
 
+  // Chosen variant — null when the product offers no colours/sizes.
+  @Column({ name: 'selected_color', type: 'varchar', length: 60, nullable: true })
+  selectedColor: string | null;
+
+  @Column({ name: 'selected_size', type: 'varchar', length: 30, nullable: true })
+  selectedSize: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

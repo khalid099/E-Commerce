@@ -31,6 +31,13 @@ export class OrderItem {
   @Column({ type: 'int' })
   quantity: number;
 
+  // Variant snapshot — frozen at order time, never dereferenced from the live product.
+  @Column({ name: 'selected_color', type: 'varchar', length: 60, nullable: true })
+  selectedColor: string | null;
+
+  @Column({ name: 'selected_size', type: 'varchar', length: 30, nullable: true })
+  selectedSize: string | null;
+
   @Column({ name: 'line_total', type: 'decimal', precision: 10, scale: 2 })
   lineTotal: number;
 }

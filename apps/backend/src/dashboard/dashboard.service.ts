@@ -7,10 +7,15 @@ import { Product } from '../products/entities/product.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import type { DashboardStats } from '@ecommerce/shared-types';
 
-// Number of trailing days included in the revenue trend chart.
-const REVENUE_TREND_DAYS = 14;
+// Number of trailing calendar months included in the revenue trend chart.
+const REVENUE_TREND_MONTHS = 6;
 // Number of best-selling products surfaced.
 const TOP_PRODUCTS_LIMIT = 5;
+
+const MONTH_LABELS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
 
 @Injectable()
 export class DashboardService {
@@ -36,7 +41,7 @@ export class DashboardService {
       totalCustomers,
       ordersByStatus,
       topProducts,
-      revenueByDay,
+      revenueByMonth,
     ] = await Promise.all([
       this.getTotalRevenue(),
       this.orderRepo.count(),
@@ -44,17 +49,23 @@ export class DashboardService {
       this.userRepo.count({ where: { role: UserRole.CUSTOMER } }),
       this.getOrdersByStatus(),
       this.getTopProducts(),
-      this.getRevenueByDay(),
+      this.getRevenueByMonth(),
     ]);
+
+    // AOV is over realised orders only — cancelled orders never produced a sale.
+    const realisedOrders = totalOrders - (ordersByStatus[OrderStatus.CANCELLED] ?? 0);
+    const averageOrderValue =
+      realisedOrders > 0 ? Math.round((totalRevenue / realisedOrders) * 100) / 100 : 0;
 
     return {
       totalRevenue,
       totalOrders,
       totalProducts,
       totalCustomers,
+      averageOrderValue,
       ordersByStatus,
       topProducts,
-      revenueByDay,
+      revenueByMonth,
     };
   }
 
@@ -88,16 +99,26 @@ export class DashboardService {
   }
 
   private async getTopProducts(): Promise<DashboardStats['topProducts']> {
+    // LEFT JOIN the product so a since-removed product still reports its sales,
+    // just without a live image/category.
     const rows = await this.orderItemRepo
       .createQueryBuilder('oi')
       .innerJoin('oi.order', 'o')
+      // OrderItem has no Product relation (it snapshots name/price), so join by id.
+      // product_id is a plain varchar column while products.id is uuid — cast to match.
+      .leftJoin(Product, 'p', 'p.id = oi.product_id::uuid')
+      .leftJoin('p.category', 'c')
       .select('oi.productId', 'productId')
       .addSelect('oi.productName', 'productName')
       .addSelect('SUM(oi.quantity)', 'unitsSold')
       .addSelect('SUM(oi.lineTotal)', 'revenue')
+      .addSelect('p.imageUrl', 'imageUrl')
+      .addSelect('c.name', 'categoryName')
       .where('o.status != :cancelled', { cancelled: OrderStatus.CANCELLED })
       .groupBy('oi.productId')
       .addGroupBy('oi.productName')
+      .addGroupBy('p.imageUrl')
+      .addGroupBy('c.name')
       .orderBy('SUM(oi.quantity)', 'DESC')
       .limit(TOP_PRODUCTS_LIMIT)
       .getRawMany<{
@@ -105,6 +126,8 @@ export class DashboardService {
         productName: string;
         unitsSold: string;
         revenue: string;
+        imageUrl: string | null;
+        categoryName: string | null;
       }>();
 
     return rows.map((row) => ({
@@ -112,38 +135,40 @@ export class DashboardService {
       productName: row.productName,
       unitsSold: Number(row.unitsSold),
       revenue: Math.round(Number(row.revenue) * 100) / 100,
+      imageUrl: row.imageUrl ?? null,
+      categoryName: row.categoryName ?? null,
     }));
   }
 
-  private async getRevenueByDay(): Promise<DashboardStats['revenueByDay']> {
-    // Inclusive window: today back through REVENUE_TREND_DAYS - 1 days.
+  private async getRevenueByMonth(): Promise<DashboardStats['revenueByMonth']> {
+    // Inclusive window: first day of the month REVENUE_TREND_MONTHS - 1 months ago.
     const since = new Date();
     since.setHours(0, 0, 0, 0);
-    since.setDate(since.getDate() - (REVENUE_TREND_DAYS - 1));
+    since.setDate(1);
+    since.setMonth(since.getMonth() - (REVENUE_TREND_MONTHS - 1));
 
     const rows = await this.orderRepo
       .createQueryBuilder('o')
-      .select("TO_CHAR(o.createdAt, 'YYYY-MM-DD')", 'date')
+      .select("TO_CHAR(o.createdAt, 'YYYY-MM')", 'month')
       .addSelect('SUM(o.total)', 'revenue')
       .addSelect('COUNT(*)', 'orders')
       .where('o.status != :cancelled', { cancelled: OrderStatus.CANCELLED })
       .andWhere('o.createdAt >= :since', { since })
-      .groupBy("TO_CHAR(o.createdAt, 'YYYY-MM-DD')")
-      .getRawMany<{ date: string; revenue: string; orders: string }>();
+      .groupBy("TO_CHAR(o.createdAt, 'YYYY-MM')")
+      .getRawMany<{ month: string; revenue: string; orders: string }>();
 
-    const byDate = new Map(rows.map((r) => [r.date, r]));
+    const byMonth = new Map(rows.map((r) => [r.month, r]));
 
-    // Emit a continuous series so the chart has no gaps on quiet days.
-    // Build keys from local date parts (not toISOString, which is UTC and would
-    // shift the window by a day in non-UTC timezones) to match TO_CHAR output.
-    const series: DashboardStats['revenueByDay'] = [];
-    for (let i = 0; i < REVENUE_TREND_DAYS; i++) {
-      const day = new Date(since);
-      day.setDate(since.getDate() + i);
-      const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-      const match = byDate.get(date);
+    // Emit a continuous 6-month series so the chart has no gaps on quiet months.
+    const series: DashboardStats['revenueByMonth'] = [];
+    for (let i = 0; i < REVENUE_TREND_MONTHS; i++) {
+      const d = new Date(since);
+      d.setMonth(since.getMonth() + i);
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const match = byMonth.get(month);
       series.push({
-        date,
+        month,
+        label: MONTH_LABELS[d.getMonth()],
         revenue: match ? Math.round(Number(match.revenue) * 100) / 100 : 0,
         orders: match ? Number(match.orders) : 0,
       });

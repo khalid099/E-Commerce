@@ -13,6 +13,11 @@ export function money(value: number | string): string {
   return '$' + (Math.round(n * 100) / 100).toFixed(2);
 }
 
+/** Compact whole-dollar money for charts/labels, e.g. 3420.5 → "$3,420". */
+export function compactMoney(value: number | string): string {
+  return '$' + Math.round(Number(value)).toLocaleString('en-US');
+}
+
 /** Free-shipping threshold and flat fee, mirrored in the cart summary. */
 export const SHIPPING_THRESHOLD = 150;
 export const SHIPPING_FEE = 9.99;

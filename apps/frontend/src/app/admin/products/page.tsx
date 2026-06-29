@@ -1,33 +1,54 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Plus, Pencil, Trash2, Search, Package, Loader2 } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, Loader2, Trash } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatPrice } from '@/lib/utils';
-import { listAdminProducts, deleteProduct } from '@/lib/adminProducts';
-import type { Product } from '@ecommerce/shared-types';
+import { Panel } from '@/components/admin/Panel';
+import { StockBadge } from '@/components/admin/StockBadge';
+import { ProductModal } from '@/components/admin/ProductModal';
+import { ProductTone } from '@/components/storefront/ProductTone';
+import { listAdminProducts, deleteProduct, listCategories } from '@/lib/adminProducts';
+import { money } from '@/lib/storefront';
+import { getErrorMessage } from '@/lib/errors';
+import type { Category, Product } from '@ecommerce/shared-types';
 
 const PAGE_SIZE = 10;
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+
+  useEffect(() => {
+    listCategories().then(setCategories).catch(() => setCategories([]));
+  }, []);
+
+  // Debounce the search box so we don't fire a request per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await listAdminProducts({ search: search || undefined, page, limit: PAGE_SIZE });
+      const res = await listAdminProducts({
+        search: debounced || undefined,
+        categoryId: categoryId || undefined,
+        page,
+        limit: PAGE_SIZE,
+      });
       setProducts(res.data);
       setTotalPages(res.meta.totalPages);
       setTotal(res.meta.total);
@@ -36,141 +57,171 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, page]);
+  }, [debounced, categoryId, page]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Reset to first page whenever the search term changes.
+  // Reset to the first page when a filter changes.
   useEffect(() => {
     setPage(1);
-  }, [search]);
+  }, [debounced, categoryId]);
+
+  const openCreate = () => {
+    setEditing(null);
+    setModalOpen(true);
+  };
+  const openEdit = (p: Product) => {
+    setEditing(p);
+    setModalOpen(true);
+  };
 
   const confirmDelete = async () => {
     if (!deleting) return;
     setDeleteBusy(true);
     try {
       await deleteProduct(deleting.id);
-      toast.success(`"${deleting.name}" deleted`);
+      toast.success(`${deleting.name} deleted`);
       setDeleting(null);
-      // If we removed the last row on a page beyond the first, step back.
-      if (products.length === 1 && page > 1) {
-        setPage((p) => p - 1);
-      } else {
-        load();
-      }
-    } catch {
-      toast.error('Failed to delete product');
+      if (products.length === 1 && page > 1) setPage((p) => p - 1);
+      else load();
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to delete product'));
     } finally {
       setDeleteBusy(false);
     }
   };
 
+  const chipClass = (active: boolean) =>
+    `cursor-pointer rounded-full border px-4 py-[9px] text-[13px] font-semibold transition-colors ${
+      active
+        ? 'border-maison-ink bg-maison-ink text-white'
+        : 'border-maison-line-strong bg-white text-maison-muted hover:border-maison-clay'
+    }`;
+
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Products</h1>
-          <p className="text-sm text-muted-foreground">{total} total</p>
+    <div>
+      {/* toolbar */}
+      <div className="mb-[22px] flex flex-wrap items-center gap-3.5">
+        <div className="relative min-w-[280px] flex-1">
+          <Search className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-maison-faint" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products…"
+            aria-label="Search products"
+            className="w-full rounded-full border border-maison-line-strong bg-white py-[13px] pl-11 pr-4 text-[14.5px] outline-none transition-colors focus:border-maison-clay"
+          />
         </div>
-        <Button asChild>
-          <Link href="/admin/products/new">
-            <Plus className="mr-1.5 h-4 w-4" />
-            New Product
-          </Link>
-        </Button>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 rounded-full bg-maison-clay px-5 py-[11px] text-sm font-semibold text-white shadow-[0_10px_24px_rgba(199,91,57,0.3)] transition-transform hover:-translate-y-0.5"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2.4} />
+          New product
+        </button>
       </div>
 
-      <div className="relative mb-4 max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name…"
-          className="pl-9"
-        />
+      {/* category chips */}
+      <div className="mb-[22px] flex flex-wrap gap-2">
+        <button type="button" className={chipClass(categoryId === '')} onClick={() => setCategoryId('')}>
+          All
+        </button>
+        {categories.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className={chipClass(categoryId === c.id)}
+            onClick={() => setCategoryId(c.id)}
+          >
+            {c.name}
+          </button>
+        ))}
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-background">
+      {/* table */}
+      <Panel className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Product</th>
-                <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Price</th>
-                <th className="px-4 py-3 font-medium">Stock</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-maison-line bg-[#FBF7F1] text-[11.5px] font-bold tracking-[0.8px] text-[#9A9082]">
+                <th scope="col" className="px-[26px] py-4 font-bold">PRODUCT</th>
+                <th scope="col" className="px-3 py-4 font-bold">CATEGORY</th>
+                <th scope="col" className="px-3 py-4 font-bold">PRICE</th>
+                <th scope="col" className="px-3 py-4 font-bold">STOCK</th>
+                <th scope="col" className="px-3 py-4 font-bold">STATUS</th>
+                <th scope="col" className="px-[26px] py-4 text-right font-bold">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="px-4 py-3" colSpan={6}>
-                      <Skeleton className="h-10 w-full" />
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[#F2EDE4]">
+                    <td colSpan={6} className="px-[26px] py-4">
+                      <div className="h-12 animate-pulse rounded-lg bg-maison-panel" />
                     </td>
                   </tr>
                 ))
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center text-muted-foreground">
-                    <Package className="mx-auto mb-3 h-10 w-10 opacity-40" />
-                    No products found.
+                  <td colSpan={6} className="px-5 py-[70px] text-center">
+                    <div className="font-serif text-[26px] text-maison-ink">No products found</div>
+                    <p className="mt-1.5 text-maison-subtle">Try a different search or category.</p>
                   </td>
                 </tr>
               ) : (
                 products.map((p) => (
-                  <tr key={p.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
-                          {p.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- arbitrary external URLs in admin table
-                            <img
-                              src={p.imageUrl}
-                              alt={p.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
-                              <Package className="h-4 w-4" />
-                            </div>
-                          )}
+                  <tr
+                    key={p.id}
+                    className={`border-b border-[#F2EDE4] last:border-0 ${p.isActive ? '' : 'opacity-60'}`}
+                  >
+                    <td className="px-[26px] py-3.5">
+                      <div className="flex items-center gap-3.5">
+                        <ProductTone
+                          name={p.name}
+                          categoryName={p.category?.name}
+                          imageUrl={p.imageUrl}
+                          initialClassName="text-[20px]"
+                          className="h-12 w-12 flex-shrink-0 rounded-[11px]"
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-[14.5px] font-semibold text-maison-ink">{p.name}</div>
+                          <div className="text-xs text-maison-faint">ID {p.id.slice(0, 8).toUpperCase()}</div>
                         </div>
-                        <span className="line-clamp-1 font-medium">{p.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{p.category?.name ?? '—'}</td>
-                    <td className="px-4 py-3">{formatPrice(p.price)}</td>
-                    <td className="px-4 py-3">
-                      <span className={p.stockQuantity === 0 ? 'text-destructive' : ''}>
-                        {p.stockQuantity}
-                      </span>
+                    <td className="px-3 py-3.5 text-[13.5px] text-maison-muted">{p.category?.name ?? '—'}</td>
+                    <td className="px-3 py-3.5 text-[14.5px] font-bold text-maison-ink">{money(p.price)}</td>
+                    <td className="px-3 py-3.5 text-sm text-maison-muted tabular-nums">{p.stockQuantity}</td>
+                    <td className="px-3 py-3.5">
+                      {p.isActive ? (
+                        <StockBadge quantity={p.stockQuantity} />
+                      ) : (
+                        <span className="inline-flex rounded-full bg-maison-panel px-[11px] py-[5px] text-xs font-bold text-maison-faint">
+                          Hidden
+                        </span>
+                      )}
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={p.isActive ? 'success' : 'destructive'}>
-                        {p.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-                          <Link href={`/admin/products/${p.id}/edit`} aria-label="Edit">
-                            <Pencil className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          aria-label="Delete"
-                          onClick={() => setDeleting(p)}
+                    <td className="px-[26px] py-3.5">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(p)}
+                          aria-label={`Edit ${p.name}`}
+                          className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-maison-line-strong bg-white text-maison-muted transition-colors hover:border-maison-clay hover:text-maison-clay"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <Pencil className="h-[15px] w-[15px]" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(p)}
+                          aria-label={`Delete ${p.name}`}
+                          className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-maison-line-strong bg-white text-maison-muted transition-colors hover:border-[#B23B3B] hover:bg-[#F6E1E1] hover:text-[#B23B3B]"
+                        >
+                          <Trash2 className="h-[15px] w-[15px]" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -179,43 +230,83 @@ export default function AdminProductsPage() {
             </tbody>
           </table>
         </div>
+      </Panel>
+
+      {/* pagination */}
+      <div className="mt-4 flex items-center justify-between text-sm text-maison-subtle">
+        <span>{total} products</span>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
+      {modalOpen && (
+        <ProductModal
+          product={editing ?? undefined}
+          categories={categories}
+          onClose={() => setModalOpen(false)}
+          onSaved={load}
+        />
       )}
 
       {deleting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-lg border bg-background p-6 shadow-lg">
-            <h2 className="text-lg font-semibold">Delete product?</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              &ldquo;{deleting.name}&rdquo; will be hidden from the storefront. Existing orders that
-              reference it are preserved.
+        <div
+          className="fixed inset-0 z-[320] flex animate-fade-in items-center justify-center bg-[rgba(33,28,22,0.42)] p-6 backdrop-blur-sm"
+          onClick={() => !deleteBusy && setDeleting(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete product"
+            className="w-full max-w-[420px] animate-modal-in rounded-[22px] bg-white p-[30px] text-center shadow-[0_40px_90px_rgba(33,28,22,0.32)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-[18px] flex h-14 w-14 items-center justify-center rounded-full bg-[#F6E1E1] text-[#B23B3B]">
+              <Trash className="h-[26px] w-[26px]" />
+            </div>
+            <div className="mb-1.5 font-serif text-[26px] text-maison-ink">Delete product?</div>
+            <p className="mb-6 text-[14.5px] leading-relaxed text-maison-muted">
+              {deleting.name} will be hidden from the storefront. Existing orders that reference it are
+              preserved.
             </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setDeleting(null)} disabled={deleteBusy}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmDelete} disabled={deleteBusy}>
-                {deleteBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleting(null)}
+                disabled={deleteBusy}
+                className="flex-1 rounded-full border border-maison-stone bg-white py-[13px] text-[14.5px] font-semibold text-maison-ink transition-colors hover:bg-[#F4ECE0] disabled:opacity-60"
+              >
+                Keep it
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleteBusy}
+                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#B23B3B] py-[13px] text-[14.5px] font-semibold text-white transition-colors hover:bg-[#992F2F] disabled:opacity-60"
+              >
+                {deleteBusy && <Loader2 className="h-4 w-4 animate-spin" />}
                 Delete
-              </Button>
+              </button>
             </div>
           </div>
         </div>

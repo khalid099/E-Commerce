@@ -23,6 +23,10 @@ export interface OrderItem {
   productName: string;
   unitPrice: number;
   quantity: number;
+  /** Snapshot of the colour chosen at order time; null when none. */
+  selectedColor: string | null;
+  /** Snapshot of the size chosen at order time; null when none. */
+  selectedSize: string | null;
   lineTotal: number;
 }
 

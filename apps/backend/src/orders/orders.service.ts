@@ -59,6 +59,8 @@ export class OrdersService {
         productName: item.productName,
         unitPrice: Number(item.unitPrice),
         quantity: item.quantity,
+        selectedColor: item.selectedColor ?? null,
+        selectedSize: item.selectedSize ?? null,
         lineTotal: Number(item.lineTotal),
       })),
       subtotal: Number(order.subtotal),
@@ -140,6 +142,8 @@ export class OrdersService {
           productName: cartItem.product.name,
           unitPrice: Number(cartItem.product.price),
           quantity: cartItem.quantity,
+          selectedColor: cartItem.selectedColor ?? null,
+          selectedSize: cartItem.selectedSize ?? null,
           lineTotal: Math.round(Number(cartItem.product.price) * cartItem.quantity * 100) / 100,
         }),
       );

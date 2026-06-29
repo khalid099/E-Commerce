@@ -95,6 +95,19 @@ export default function LoginPage() {
         </button>
       </form>
 
+      <div className="my-5 flex items-center gap-3 text-[12px] text-maison-faint">
+        <span className="h-px flex-1 bg-maison-line-strong" />
+        or
+        <span className="h-px flex-1 bg-maison-line-strong" />
+      </div>
+
+      <Link
+        href="/"
+        className="flex h-[52px] items-center justify-center rounded-full border border-maison-line-strong text-[15.5px] font-semibold text-maison-ink transition-colors hover:bg-[#F4ECE0]"
+      >
+        Continue as guest
+      </Link>
+
       <div className="mt-5 text-center text-sm text-maison-subtle">
         New here?{' '}
         <Link href="/register" className="font-semibold text-maison-clay">

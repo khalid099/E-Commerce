@@ -22,16 +22,22 @@ export function useAddToCart() {
   const bumpCart = useUiStore((s) => s.bumpCart);
   const [isAdding, setIsAdding] = useState(false);
 
-  const add = async (product: Product, quantity = 1) => {
+  const add = async (
+    product: Product,
+    quantity = 1,
+    selectedColor?: string | null,
+    selectedSize?: string | null,
+  ) => {
     if (!user) {
       router.push('/login');
       return false;
     }
     setIsAdding(true);
     try {
-      await addItem(product.id, quantity);
+      await addItem(product.id, quantity, selectedColor, selectedSize);
       bumpCart();
-      showToast(`${product.name} added to cart`);
+      const variant = [selectedColor, selectedSize].filter(Boolean).join(' · ');
+      showToast(`${product.name}${variant ? ` (${variant})` : ''} added to cart`);
       return true;
     } catch (err) {
       showToast(getErrorMessage(err, 'Could not add to cart'));

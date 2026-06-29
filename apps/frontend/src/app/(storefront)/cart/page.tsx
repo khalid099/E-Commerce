@@ -183,7 +183,19 @@ function CartLine({ item }: { item: CartItem }) {
             >
               {item.product.name}
             </Link>
-            <div className="mt-[3px] text-[13px] text-maison-subtle">
+            {(item.selectedColor || item.selectedSize) && (
+              <div className="mt-[5px] flex flex-wrap gap-1.5">
+                {[item.selectedColor, item.selectedSize].filter(Boolean).map((v) => (
+                  <span
+                    key={v}
+                    className="rounded-full bg-[#F4ECE0] px-2.5 py-0.5 text-[11.5px] font-semibold text-maison-clay-dark"
+                  >
+                    {v}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-[5px] text-[13px] text-maison-subtle">
               {money(item.product.price)} each
             </div>
           </div>

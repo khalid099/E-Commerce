@@ -107,6 +107,22 @@ const config: Config = {
           '0%,100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
         },
+        'grow-bar': {
+          from: { transform: 'scaleY(0)' },
+          to: { transform: 'scaleY(1)' },
+        },
+        'drawer-in': {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(0)' },
+        },
+        'modal-in': {
+          from: { opacity: '0', transform: 'translateY(26px) scale(.97)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -116,6 +132,10 @@ const config: Config = {
         'toast-in': 'toast-in 0.35s cubic-bezier(.16,.84,.44,1) both',
         'ring-scale': 'ring-scale 0.5s cubic-bezier(.16,.84,.44,1) both',
         floaty: 'floaty 7s ease-in-out infinite',
+        'grow-bar': 'grow-bar 0.8s cubic-bezier(.16,.84,.44,1) both',
+        'drawer-in': 'drawer-in 0.4s cubic-bezier(.16,.84,.44,1) both',
+        'modal-in': 'modal-in 0.4s cubic-bezier(.16,.84,.44,1) both',
+        'fade-in': 'fade-in 0.25s ease both',
       },
     },
   },

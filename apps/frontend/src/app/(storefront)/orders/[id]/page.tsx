@@ -132,6 +132,11 @@ export default function OrderDetailPage() {
                 <ProductTone name={item.productName} initialClassName="text-[24px]" className="h-12 w-12 flex-shrink-0 rounded-[10px]" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{item.productName}</p>
+                  {(item.selectedColor || item.selectedSize) && (
+                    <p className="text-xs text-maison-clay-dark">
+                      {[item.selectedColor, item.selectedSize].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                   <p className="text-xs text-maison-subtle">
                     {money(item.unitPrice)} × {item.quantity}
                   </p>

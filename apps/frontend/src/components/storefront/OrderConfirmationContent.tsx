@@ -94,7 +94,14 @@ export function OrderConfirmationContent() {
           {order.items.map((item) => (
             <div key={item.id} className="flex justify-between text-[14.5px]">
               <span className="text-[#3A342C]">
-                {item.productName} <span className="text-maison-subtle">× {item.quantity}</span>
+                {item.productName}
+                {(item.selectedColor || item.selectedSize) && (
+                  <span className="text-maison-clay-dark">
+                    {' '}
+                    ({[item.selectedColor, item.selectedSize].filter(Boolean).join(' · ')})
+                  </span>
+                )}{' '}
+                <span className="text-maison-subtle">× {item.quantity}</span>
               </span>
               <span className="font-semibold">{money(item.lineTotal)}</span>
             </div>

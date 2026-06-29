@@ -18,7 +18,7 @@ import { Category } from '../../categories/entities/category.entity';
 import { Product } from '../../products/entities/product.entity';
 import { Cart } from '../../cart/entities/cart.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
-import { Order } from '../../orders/entities/order.entity';
+import { Order, OrderStatus } from '../../orders/entities/order.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import type { ProductColor } from '@ecommerce/shared-types';
 
@@ -181,6 +181,55 @@ const EXTRA_PRODUCTS: ProductSeed[] = [
 
 const ALL_PRODUCTS = [...EXTRA_PRODUCTS, ...DESIGN_PRODUCTS]; // design products last → newest
 
+/** Extra customers so the dashboard customer count and order names read like a real shop. */
+interface CustomerSeed {
+  email: string;
+  firstName: string;
+  lastName: string;
+  city: string;
+  state: string;
+}
+const CUSTOMERS: CustomerSeed[] = [
+  { email: 'amelia.carter@example.com', firstName: 'Amelia', lastName: 'Carter', city: 'London', state: 'ENG' },
+  { email: 'noah.bennett@example.com', firstName: 'Noah', lastName: 'Bennett', city: 'Manchester', state: 'ENG' },
+  { email: 'sofia.reyes@example.com', firstName: 'Sofia', lastName: 'Reyes', city: 'Bristol', state: 'ENG' },
+  { email: 'liam.walsh@example.com', firstName: 'Liam', lastName: 'Walsh', city: 'Leeds', state: 'ENG' },
+  { email: 'olivia.chen@example.com', firstName: 'Olivia', lastName: 'Chen', city: 'Edinburgh', state: 'SCT' },
+  { email: 'ethan.brooks@example.com', firstName: 'Ethan', lastName: 'Brooks', city: 'Cardiff', state: 'WLS' },
+  { email: 'mia.lindqvist@example.com', firstName: 'Mia', lastName: 'Lindqvist', city: 'Glasgow', state: 'SCT' },
+  { email: 'lucas.moreau@example.com', firstName: 'Lucas', lastName: 'Moreau', city: 'Liverpool', state: 'ENG' },
+];
+
+/** How many orders the seed generates on a fresh database. */
+const ORDER_COUNT = 42;
+const TAX_RATE = 0.1; // mirrors OrdersService
+
+/** Deterministic PRNG so re-running on a fresh DB yields the same demo data. */
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Pick a realistic status given how long ago the order was placed. */
+function statusForAge(daysAgo: number, r: number): OrderStatus {
+  if (daysAgo > 60) {
+    return r < 0.85 ? OrderStatus.DELIVERED : r < 0.94 ? OrderStatus.SHIPPED : OrderStatus.CANCELLED;
+  }
+  if (daysAgo > 21) {
+    return r < 0.5 ? OrderStatus.DELIVERED : r < 0.78 ? OrderStatus.SHIPPED : r < 0.9 ? OrderStatus.PROCESSING : OrderStatus.CANCELLED;
+  }
+  if (daysAgo > 7) {
+    return r < 0.38 ? OrderStatus.SHIPPED : r < 0.7 ? OrderStatus.PROCESSING : r < 0.9 ? OrderStatus.DELIVERED : OrderStatus.CANCELLED;
+  }
+  return r < 0.6 ? OrderStatus.PENDING : r < 0.85 ? OrderStatus.PROCESSING : r < 0.95 ? OrderStatus.SHIPPED : OrderStatus.CANCELLED;
+}
+
 async function seed() {
   const dataSource = new DataSource({
     type: 'postgres',
@@ -209,13 +258,29 @@ async function seed() {
     role: UserRole.ADMIN,
   });
   await upsertUser(userRepo, {
+    email: 'admin@yopmail.com',
+    password: 'admin@123',
+    firstName: 'Yop',
+    lastName: 'Admin',
+    role: UserRole.ADMIN,
+  });
+  await upsertUser(userRepo, {
     email: 'customer@ecommerce.com',
     password: 'Customer@123456',
     firstName: 'Ada',
     lastName: 'Lovelace',
     role: UserRole.CUSTOMER,
   });
-  console.log('  ✓ 2 users');
+  for (const c of CUSTOMERS) {
+    await upsertUser(userRepo, {
+      email: c.email,
+      password: 'Customer@123456',
+      firstName: c.firstName,
+      lastName: c.lastName,
+      role: UserRole.CUSTOMER,
+    });
+  }
+  console.log(`  ✓ ${2 + CUSTOMERS.length} users`);
 
   // Categories — upsert by slug.
   const categoryBySlug = new Map<string, Category>();
@@ -252,6 +317,101 @@ async function seed() {
   }
   console.log(`  ✓ ${ALL_PRODUCTS.length} products`);
 
+  // Orders — generated once on a fresh database. Idempotent: if any order
+  // already exists we skip entirely rather than risk duplicating history.
+  const orderRepo = dataSource.getRepository(Order);
+  const existingOrders = await orderRepo.count();
+  if (existingOrders > 0) {
+    console.log(`  ✓ orders present (${existingOrders}) — skipped`);
+  } else {
+    const products = await productRepo.find();
+    const customerUsers = await Promise.all(
+      CUSTOMERS.map(async (c) => ({
+        seed: c,
+        user: await userRepo.findOne({ where: { email: c.email } }),
+      })),
+    );
+    const buyers = customerUsers.filter((c) => c.user);
+
+    const rng = mulberry32(20260629);
+    const createdStamps: Array<{ id: string; date: Date }> = [];
+
+    for (let i = 0; i < ORDER_COUNT; i++) {
+      const buyer = buyers[Math.floor(rng() * buyers.length)];
+      const user = buyer.user!;
+      // Force the first few orders to be very recent so the catalogue always has
+      // some live PENDING/PROCESSING work to fulfil; the rest spread over 6 months.
+      const daysAgo = i < 6 ? i : Math.floor(rng() * 175);
+      const placedAt = new Date(Date.now() - daysAgo * 86_400_000 - Math.floor(rng() * 86_400_000));
+
+      // 1–3 distinct products, qty 1–2 each — snapshot price + name like a real order.
+      const nItems = 1 + Math.floor(rng() * 3);
+      const used = new Set<string>();
+      const items: OrderItem[] = [];
+      let subtotal = 0;
+      for (let j = 0; j < nItems; j++) {
+        let product = products[Math.floor(rng() * products.length)];
+        let guard = 0;
+        while (used.has(product.id) && guard < 6) {
+          product = products[Math.floor(rng() * products.length)];
+          guard++;
+        }
+        if (used.has(product.id)) continue;
+        used.add(product.id);
+        const qty = 1 + Math.floor(rng() * 2);
+        const unitPrice = Number(product.price);
+        const lineTotal = Math.round(unitPrice * qty * 100) / 100;
+        subtotal += lineTotal;
+        items.push(
+          orderRepo.manager.create(OrderItem, {
+            productId: product.id,
+            productName: product.name,
+            unitPrice,
+            quantity: qty,
+            lineTotal,
+          }),
+        );
+      }
+      subtotal = Math.round(subtotal * 100) / 100;
+      const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
+      const total = Math.round((subtotal + tax) * 100) / 100;
+      const status = statusForAge(daysAgo, rng());
+
+      const order = orderRepo.create({
+        userId: user.id,
+        status,
+        items,
+        subtotal,
+        tax,
+        shippingCost: 0,
+        total,
+        shippingAddress: {
+          fullName: `${user.firstName} ${user.lastName}`,
+          line1: `${10 + Math.floor(rng() * 200)} High Street`,
+          city: buyer.seed.city,
+          state: buyer.seed.state,
+          postalCode: `${String.fromCharCode(65 + Math.floor(rng() * 26))}${1 + Math.floor(rng() * 9)} ${1 + Math.floor(rng() * 9)}${String.fromCharCode(65 + Math.floor(rng() * 26))}${String.fromCharCode(65 + Math.floor(rng() * 26))}`,
+          country: 'United Kingdom',
+        },
+        stripePaymentIntentId: null,
+      });
+      const saved = await orderRepo.save(order);
+      createdStamps.push({ id: saved.id, date: placedAt });
+    }
+
+    // @CreateDateColumn defaults to now() on insert; backdate explicitly so the
+    // revenue-by-month chart and recent-orders list spread across real history.
+    for (const { id, date } of createdStamps) {
+      await orderRepo
+        .createQueryBuilder()
+        .update(Order)
+        .set({ createdAt: date })
+        .where('id = :id', { id })
+        .execute();
+    }
+    console.log(`  ✓ ${ORDER_COUNT} orders`);
+  }
+
   await dataSource.destroy();
   console.log('Seed complete.');
 }
@@ -261,17 +421,15 @@ async function upsertUser(
   data: { email: string; password: string; firstName: string; lastName: string; role: UserRole },
 ) {
   let user = await userRepo.findOne({ where: { email: data.email } });
-  if (!user) {
-    user = userRepo.create({
-      email: data.email,
-      passwordHash: await bcrypt.hash(data.password, 12),
-      firstName: data.firstName,
-      lastName: data.lastName,
-      role: data.role,
-    });
-    await userRepo.save(user);
-  }
-  // Existing users keep their password on re-seed (idempotent, no churn).
+  if (!user) user = userRepo.create({ email: data.email });
+  // Seed accounts are demo logins: always (re)set the documented password, name
+  // and role so `npm run seed` reliably restores the credentials in CLAUDE.md —
+  // even if the row already existed with a different password from an earlier run.
+  user.passwordHash = await bcrypt.hash(data.password, 12);
+  user.firstName = data.firstName;
+  user.lastName = data.lastName;
+  user.role = data.role;
+  await userRepo.save(user);
 }
 
 seed().catch((err) => {

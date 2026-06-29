@@ -111,7 +111,12 @@ export class AdminProductsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp|gif)$/ }),
+          // We use multer diskStorage, so `file.buffer` is undefined and the
+          // default magic-number check can't run — validate the mimetype string.
+          new FileTypeValidator({
+            fileType: /^image\/(jpeg|png|webp|gif)$/,
+            skipMagicNumbersValidation: true,
+          }),
         ],
       }),
     )

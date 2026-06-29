@@ -30,15 +30,24 @@ export interface DashboardStats {
   totalOrders: number;
   totalProducts: number;
   totalCustomers: number;
+  /** Mean value of realised (non-cancelled) orders; 0 when there are none. */
+  averageOrderValue: number;
   ordersByStatus: Record<string, number>;
   topProducts: Array<{
     productId: string;
     productName: string;
     unitsSold: number;
     revenue: number;
+    /** Live product image/category for the dashboard thumbnail; null if the product was removed. */
+    imageUrl: string | null;
+    categoryName: string | null;
   }>;
-  revenueByDay: Array<{
-    date: string;
+  /** Realised revenue per calendar month for the trailing 6 months, oldest first. */
+  revenueByMonth: Array<{
+    /** YYYY-MM key. */
+    month: string;
+    /** Short month label, e.g. "Jan". */
+    label: string;
     revenue: number;
     orders: number;
   }>;

@@ -1,187 +1,191 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ClipboardList, Loader2, Eye } from 'lucide-react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatPrice } from '@/lib/utils';
-import { getErrorMessage } from '@/lib/errors';
-import { listAdminOrders, updateOrderStatus } from '@/lib/adminOrders';
-import { OrderStatusBadge, formatStatus } from '@/components/admin/OrderStatusBadge';
-import type { Order } from '@ecommerce/shared-types';
-import { OrderStatus, ORDER_STATUS_TRANSITIONS } from '@ecommerce/shared-types';
+import { Panel } from '@/components/admin/Panel';
+import { StatusPill } from '@/components/admin/StatusPill';
+import { OrderDrawer } from '@/components/admin/OrderDrawer';
+import { listAdminOrders, getAdminOrder } from '@/lib/adminOrders';
+import { getDashboardStats } from '@/lib/dashboard';
+import { formatStatus } from '@/lib/orderStatus';
+import { money } from '@/lib/storefront';
+import { OrderStatus, type Order } from '@ecommerce/shared-types';
 
 const PAGE_SIZE = 10;
-const ALL_STATUSES = Object.values(OrderStatus);
+const FILTERS: Array<OrderStatus | 'ALL'> = ['ALL', ...Object.values(OrderStatus)];
 
-export default function AdminOrdersPage() {
+function shortId(id: string): string {
+  return id.slice(0, 8).toUpperCase();
+}
+
+function OrdersContent() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const openId = params.get('order');
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
+  const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [total, setTotal] = useState(0);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Order | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await listAdminOrders({
-        status: statusFilter || undefined,
+        status: filter === 'ALL' ? undefined : filter,
         page,
         limit: PAGE_SIZE,
       });
       setOrders(res.data);
       setTotalPages(res.meta.totalPages);
-      setTotal(res.meta.total);
     } catch {
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, page]);
+  }, [filter, page]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Reset to first page whenever the filter changes.
   useEffect(() => {
     setPage(1);
-  }, [statusFilter]);
+  }, [filter]);
 
-  const handleStatusChange = async (order: Order, next: OrderStatus) => {
-    if (next === order.status) return;
-    setUpdatingId(order.id);
+  // Per-status counts (and the total) drive the filter chips.
+  const loadCounts = useCallback(async () => {
     try {
-      const updated = await updateOrderStatus(order.id, next);
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: updated.status } : o)));
-      toast.success(`Order #${order.id.slice(0, 8).toUpperCase()} → ${formatStatus(next)}`);
-    } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to update status'));
-    } finally {
-      setUpdatingId(null);
+      const stats = await getDashboardStats();
+      setCounts(stats.ordersByStatus);
+      setTotal(stats.totalOrders);
+    } catch {
+      /* chips simply show no counts on failure */
     }
+  }, []);
+
+  useEffect(() => {
+    loadCounts();
+  }, [loadCounts]);
+
+  // Open the drawer for a deep-linked order (?order=<id>).
+  useEffect(() => {
+    if (!openId) return;
+    const inList = orders.find((o) => o.id === openId);
+    if (inList) {
+      setSelected(inList);
+    } else {
+      getAdminOrder(openId)
+        .then(setSelected)
+        .catch(() => toast.error('Order not found'));
+    }
+  }, [openId, orders]);
+
+  const closeDrawer = () => {
+    setSelected(null);
+    if (openId) router.replace('/admin/orders');
   };
 
+  const onUpdated = (updated: Order) => {
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    setSelected(updated);
+    loadCounts();
+    // If filtering by a status the order just left, drop it from the list.
+    if (filter !== 'ALL' && updated.status !== filter) load();
+  };
+
+  const countFor = (f: OrderStatus | 'ALL') => (f === 'ALL' ? total : (counts[f] ?? 0));
+
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-          <p className="text-sm text-muted-foreground">{total} total</p>
-        </div>
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}
-          className="max-w-[180px]"
-          aria-label="Filter by status"
-        >
-          <option value="">All statuses</option>
-          {ALL_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {formatStatus(s)}
-            </option>
-          ))}
-        </Select>
+    <div>
+      {/* status filter chips */}
+      <div className="mb-[22px] flex flex-wrap gap-2">
+        {FILTERS.map((f) => {
+          const active = filter === f;
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-[15px] py-[9px] text-[13px] font-semibold transition-colors ${
+                active
+                  ? 'border-maison-ink bg-maison-ink text-white'
+                  : 'border-maison-line-strong bg-white text-maison-muted hover:border-maison-clay'
+              }`}
+            >
+              {f === 'ALL' ? 'All' : formatStatus(f)}
+              <span className="font-semibold opacity-60">{countFor(f)}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-background">
+      {/* table */}
+      <Panel className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Order</th>
-                <th className="px-4 py-3 font-medium">Customer</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">Items</th>
-                <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-maison-line bg-[#FBF7F1] text-[11.5px] font-bold tracking-[0.8px] text-[#9A9082]">
+                <th scope="col" className="px-[26px] py-4 font-bold">ORDER</th>
+                <th scope="col" className="px-3 py-4 font-bold">CUSTOMER</th>
+                <th scope="col" className="px-3 py-4 font-bold">DATE</th>
+                <th scope="col" className="px-3 py-4 font-bold">ITEMS</th>
+                <th scope="col" className="px-3 py-4 font-bold">TOTAL</th>
+                <th scope="col" className="px-[26px] py-4 font-bold">STATUS</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="px-4 py-3" colSpan={7}>
-                      <Skeleton className="h-10 w-full" />
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[#F2EDE4]">
+                    <td colSpan={6} className="px-[26px] py-4">
+                      <div className="h-10 animate-pulse rounded-lg bg-maison-panel" />
                     </td>
                   </tr>
                 ))
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center text-muted-foreground">
-                    <ClipboardList className="mx-auto mb-3 h-10 w-10 opacity-40" />
-                    No orders found.
+                  <td colSpan={6} className="px-5 py-[70px] text-center">
+                    <div className="font-serif text-[26px] text-maison-ink">No orders here</div>
+                    <p className="mt-1.5 text-maison-subtle">No orders match this filter.</p>
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => {
-                  // Allowed targets: keep the current status plus any valid next transition.
-                  const options = [order.status, ...(ORDER_STATUS_TRANSITIONS[order.status] ?? [])];
-                  const terminal = options.length === 1;
+                orders.map((o) => {
+                  const itemCount = o.items.reduce((sum, it) => sum + it.quantity, 0);
                   return (
-                    <tr key={order.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 font-medium">
-                        #{order.id.slice(0, 8).toUpperCase()}
+                    <tr
+                      key={o.id}
+                      onClick={() => setSelected(o)}
+                      className="cursor-pointer border-b border-[#F2EDE4] transition-colors last:border-0 hover:bg-[#FBF7F1]"
+                    >
+                      <td className="px-[26px] py-4 text-[13.5px] font-bold text-maison-ink">
+                        #{shortId(o.id)}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {order.customer ? (
-                          <div className="flex flex-col">
-                            <span className="text-foreground">
-                              {order.customer.firstName} {order.customer.lastName}
-                            </span>
-                            <span className="text-xs">{order.customer.email}</span>
+                      <td className="px-3 py-4">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-maison-ink">
+                            {o.customer ? `${o.customer.firstName} ${o.customer.lastName}` : '—'}
                           </div>
-                        ) : (
-                          '—'
-                        )}
+                          <div className="truncate text-xs text-maison-faint">{o.customer?.email ?? ''}</div>
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleDateString('en-GB', {
+                      <td className="px-3 py-4 text-[13.5px] text-maison-muted">
+                        {new Date(o.createdAt).toLocaleDateString('en-GB', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
                         })}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{order.items.length}</td>
-                      <td className="px-4 py-3 font-medium">{formatPrice(order.total)}</td>
-                      <td className="px-4 py-3">
-                        {terminal ? (
-                          <OrderStatusBadge status={order.status} />
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Select
-                              value={order.status}
-                              disabled={updatingId === order.id}
-                              onChange={(e) => handleStatusChange(order, e.target.value as OrderStatus)}
-                              className="h-8 w-[140px] text-xs"
-                              aria-label="Update status"
-                            >
-                              {options.map((s) => (
-                                <option key={s} value={s}>
-                                  {formatStatus(s)}
-                                </option>
-                              ))}
-                            </Select>
-                            {updatingId === order.id && (
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end">
-                          <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-                            <Link href={`/admin/orders/${order.id}`} aria-label="View order">
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </div>
+                      <td className="px-3 py-4 text-[13.5px] text-maison-muted">{itemCount} items</td>
+                      <td className="px-3 py-4 text-[14.5px] font-bold text-maison-ink">{money(o.total)}</td>
+                      <td className="px-[26px] py-4">
+                        <StatusPill status={o.status} />
                       </td>
                     </tr>
                   );
@@ -190,26 +194,42 @@ export default function AdminOrdersPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Panel>
 
+      {/* pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-maison-subtle">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
+          >
             Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
+          </button>
+          <span>
             Page {page} of {totalPages}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
+            className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
           >
             Next
-          </Button>
+          </button>
         </div>
       )}
+
+      {selected && <OrderDrawer order={selected} onClose={closeDrawer} onUpdated={onUpdated} />}
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <OrdersContent />
+    </Suspense>
   );
 }
