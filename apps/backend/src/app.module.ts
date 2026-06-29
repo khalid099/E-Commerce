@@ -7,10 +7,13 @@ import { Category } from './categories/entities/category.entity';
 import { Product } from './products/entities/product.entity';
 import { Cart } from './cart/entities/cart.entity';
 import { CartItem } from './cart/entities/cart-item.entity';
+import { Order } from './orders/entities/order.entity';
+import { OrderItem } from './orders/entities/order-item.entity';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -29,7 +32,7 @@ import { CartModule } from './cart/cart.module';
         username: config.get('DB_USERNAME', 'postgres'),
         password: config.get('DB_PASSWORD', 'postgres'),
         database: config.get('DB_NAME', 'ecommerce_db'),
-        entities: [User, Category, Product, Cart, CartItem],
+        entities: [User, Category, Product, Cart, CartItem, Order, OrderItem],
         synchronize: config.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -38,6 +41,7 @@ import { CartModule } from './cart/cart.module';
     CategoriesModule,
     ProductsModule,
     CartModule,
+    OrdersModule,
   ],
 })
 export class AppModule {}
