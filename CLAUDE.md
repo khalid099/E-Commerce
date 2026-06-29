@@ -271,7 +271,7 @@ Work in this exact sequence. Each item is a commit. Do not skip ahead.
 - [ ] **10. Payments module** — Stripe PaymentIntent creation, webhook handler (payment_intent.succeeded → order PROCESSING).
 
 ### Phase 5 — Admin & Recommendations
-- [ ] **11. Admin dashboard** — `GET /admin/dashboard` aggregates.
+- [x] **11. Admin dashboard** — `GET /admin/dashboard` aggregates.
 - [ ] **12. Recommendations module** — category affinity + co-view fallback.
 
 ### Phase 6 — Frontend
@@ -284,7 +284,7 @@ Work in this exact sequence. Each item is a commit. Do not skip ahead.
 - [ ] **19. Storefront — orders** — order history list, order detail.
 - [x] **20. Admin — products** — CRUD table, create/edit form, image upload.
 - [x] **21. Admin — orders** — all orders table, status update dropdown.
-- [ ] **22. Admin — dashboard** — stats cards + revenue line chart (Recharts).
+- [x] **22. Admin — dashboard** — stats cards + revenue line chart (Recharts).
 
 ### Phase 7 — Tests & Polish
 - [ ] **23. Backend unit tests** — AuthService, OrdersService (stock validation, total), CartService.

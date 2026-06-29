@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, ArrowLeft, ShoppingBag, ClipboardList } from 'lucide-react';
+import { Package, ArrowLeft, ShoppingBag, ClipboardList, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ClipboardList },
 ];
@@ -17,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex min-h-screen flex-col bg-muted/30">
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="flex h-14 items-center justify-between px-4 sm:px-6">
-          <Link href="/admin/products" className="flex items-center gap-2 font-bold text-primary">
+          <Link href="/admin/dashboard" className="flex items-center gap-2 font-bold text-primary">
             <ShoppingBag className="h-5 w-5" />
             ShopHive <span className="text-muted-foreground font-medium">Admin</span>
           </Link>
