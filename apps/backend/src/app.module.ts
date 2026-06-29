@@ -5,6 +5,7 @@ import configuration from './config/configuration';
 import { User } from './users/entities/user.entity';
 import { Category } from './categories/entities/category.entity';
 import { Product } from './products/entities/product.entity';
+import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 
@@ -30,6 +31,7 @@ import { ProductsModule } from './products/products.module';
         logging: config.get('NODE_ENV') === 'development',
       }),
     }),
+    AuthModule,
     CategoriesModule,
     ProductsModule,
   ],

@@ -1,7 +1,13 @@
+'use client';
+
 import Link from 'next/link';
-import { ShoppingBag, ShoppingCart, User } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, LogOut, LayoutDashboard, User } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { UserRole } from '@ecommerce/shared-types';
 
 export function Navbar() {
+  const { user, logout } = useAuthStore();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -13,27 +19,67 @@ export function Navbar() {
           ShopHive
         </Link>
 
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-5">
           <Link
             href="/products"
             className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
           >
             Shop
           </Link>
-          <Link
-            href="/cart"
-            className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
-            aria-label="Cart"
-          >
-            <ShoppingCart className="h-5 w-5" />
-          </Link>
-          <Link
-            href="/login"
-            className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
-          >
-            <User className="h-4 w-4" />
-            Login
-          </Link>
+
+          {user ? (
+            <>
+              <Link
+                href="/cart"
+                className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+                aria-label="Cart"
+              >
+                <ShoppingCart className="h-5 w-5" />
+              </Link>
+
+              {user.role === UserRole.ADMIN && (
+                <Link
+                  href="/admin/dashboard"
+                  className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+              )}
+
+              <div className="flex items-center gap-3">
+                <span className="hidden text-sm font-medium text-foreground/70 sm:block">
+                  {user.firstName}
+                </span>
+                <button
+                  onClick={() => logout()}
+                  className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  aria-label="Log out"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/cart"
+                className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+                aria-label="Cart"
+              >
+                <ShoppingCart className="h-5 w-5" />
+              </Link>
+
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+              >
+                <User className="h-4 w-4" />
+                Login
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>
