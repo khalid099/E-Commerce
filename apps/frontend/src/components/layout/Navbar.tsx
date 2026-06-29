@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { ShoppingBag, ShoppingCart, LogOut, LayoutDashboard, User } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useCartStore } from '@/store/cartStore';
 import { UserRole } from '@ecommerce/shared-types';
 
 export function Navbar() {
   const { user, logout } = useAuthStore();
+  const itemCount = useCartStore((s) => s.cart?.itemCount ?? 0);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -31,10 +33,15 @@ export function Navbar() {
             <>
               <Link
                 href="/cart"
-                className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+                className="relative text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
                 aria-label="Cart"
               >
                 <ShoppingCart className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {itemCount > 99 ? '99+' : itemCount}
+                  </span>
+                )}
               </Link>
 
               {user.role === UserRole.ADMIN && (

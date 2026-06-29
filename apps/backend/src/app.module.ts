@@ -5,9 +5,12 @@ import configuration from './config/configuration';
 import { User } from './users/entities/user.entity';
 import { Category } from './categories/entities/category.entity';
 import { Product } from './products/entities/product.entity';
+import { Cart } from './cart/entities/cart.entity';
+import { CartItem } from './cart/entities/cart-item.entity';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -26,7 +29,7 @@ import { ProductsModule } from './products/products.module';
         username: config.get('DB_USERNAME', 'postgres'),
         password: config.get('DB_PASSWORD', 'postgres'),
         database: config.get('DB_NAME', 'ecommerce_db'),
-        entities: [User, Category, Product],
+        entities: [User, Category, Product, Cart, CartItem],
         synchronize: config.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -34,6 +37,7 @@ import { ProductsModule } from './products/products.module';
     AuthModule,
     CategoriesModule,
     ProductsModule,
+    CartModule,
   ],
 })
 export class AppModule {}

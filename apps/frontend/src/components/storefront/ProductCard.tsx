@@ -1,7 +1,14 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ShoppingCart, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/utils';
+import { useAuthStore } from '@/store/authStore';
+import { useCartStore } from '@/store/cartStore';
 import type { Product } from '@ecommerce/shared-types';
 
 interface ProductCardProps {
@@ -10,10 +17,32 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const inStock = product.stockQuantity > 0;
+  const user = useAuthStore((s) => s.user);
+  const addItem = useCartStore((s) => s.addItem);
+  const [isAdding, setIsAdding] = useState(false);
+  const [added, setAdded] = useState(false);
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+    setIsAdding(true);
+    try {
+      await addItem(product.id, 1);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1500);
+    } catch {
+      // 401s are handled by the API interceptor; stock errors surface as toast in a later iteration
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   return (
-    <Link href={`/products/${product.id}`} className="group block">
-      <div className="overflow-hidden rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+    <div className="group overflow-hidden rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+      <Link href={`/products/${product.id}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted">
           {product.imageUrl ? (
             <Image
@@ -50,11 +79,11 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        <div className="p-4">
+        <div className="p-4 pb-3">
           <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {product.category?.name}
           </p>
-          <h3 className="mb-3 line-clamp-2 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+          <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
             {product.name}
           </h3>
           <div className="flex items-center justify-between">
@@ -64,7 +93,29 @@ export function ProductCard({ product }: ProductCardProps) {
             </Badge>
           </div>
         </div>
+      </Link>
+
+      <div className="px-4 pb-4">
+        <Button
+          size="sm"
+          className="w-full gap-1.5"
+          variant={added ? 'secondary' : 'default'}
+          disabled={!inStock || isAdding}
+          onClick={handleAddToCart}
+        >
+          {added ? (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              Added
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="h-3.5 w-3.5" />
+              {isAdding ? 'Adding…' : 'Add to Cart'}
+            </>
+          )}
+        </Button>
       </div>
-    </Link>
+    </div>
   );
 }
