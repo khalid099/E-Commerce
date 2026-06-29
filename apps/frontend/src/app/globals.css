@@ -35,3 +35,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Maison storefront chrome ──
+   Scoped scrollbar + form resets used by the cream-themed storefront. */
+.maison {
+  background: #faf6f0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.maison input::placeholder,
+.maison textarea::placeholder {
+  color: #b6ac9f;
+}
+.maison ::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+.maison ::-webkit-scrollbar-thumb {
+  background: #d8cdbe;
+  border-radius: 8px;
+  border: 3px solid #faf6f0;
+}

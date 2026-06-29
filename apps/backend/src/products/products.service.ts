@@ -51,10 +51,10 @@ export class ProductsService {
 
     switch (sortBy) {
       case SortBy.PRICE_ASC:
-        qb.orderBy('CAST(product.price AS numeric)', 'ASC');
+        qb.orderBy('product.price', 'ASC');
         break;
       case SortBy.PRICE_DESC:
-        qb.orderBy('CAST(product.price AS numeric)', 'DESC');
+        qb.orderBy('product.price', 'DESC');
         break;
       case SortBy.NEWEST:
       default:
@@ -114,10 +114,10 @@ export class ProductsService {
 
     switch (sortBy) {
       case SortBy.PRICE_ASC:
-        qb.orderBy('CAST(product.price AS numeric)', 'ASC');
+        qb.orderBy('product.price', 'ASC');
         break;
       case SortBy.PRICE_DESC:
-        qb.orderBy('CAST(product.price AS numeric)', 'DESC');
+        qb.orderBy('product.price', 'DESC');
         break;
       case SortBy.NEWEST:
       default:

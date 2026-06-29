@@ -7,12 +7,26 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface ProductColor {
+  name: string;
+  hex: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
+  /** Original price for sale display; null when not on sale. */
+  compareAtPrice: number | null;
   imageUrl: string | null;
+  /** Average rating 0–5; null when unrated. */
+  rating: number | null;
+  reviewCount: number;
+  /** Selectable colour swatches (presentational). */
+  colors: ProductColor[] | null;
+  /** Selectable sizes (presentational). */
+  sizes: string[] | null;
   stockQuantity: number;
   isActive: boolean;
   category: Category;
@@ -37,9 +51,14 @@ export interface CreateProductDto {
   name: string;
   description: string;
   price: number;
+  compareAtPrice?: number;
   stockQuantity: number;
   categoryId: string;
   imageUrl?: string;
+  rating?: number;
+  reviewCount?: number;
+  colors?: ProductColor[];
+  sizes?: string[];
 }
 
 export type UpdateProductDto = Partial<CreateProductDto> & { isActive?: boolean };

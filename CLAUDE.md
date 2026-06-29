@@ -254,7 +254,7 @@ Work in this exact sequence. Each item is a commit. Do not skip ahead.
 
 ### Phase 1 — Foundation
 - [ ] **1. Database entities** — create all TypeORM entities (`User`, `Category`, `Product`, `Cart`, `CartItem`, `Order`, `OrderItem`, `ProductView`). Verify with `DB_SYNCHRONIZE=true` that tables generate correctly.
-- [ ] **2. Seed script** — `src/database/seeds/seed.ts`. 8 categories, 40 products, 1 admin, 1 customer. Idempotent.
+- [x] **2. Seed script** — `src/database/seeds/seed.ts`. 8 categories, 33 products (the 8 Maison design products + catalog depth), 1 admin, 1 customer. Idempotent (upsert by slug/email/name). Seeds real imagery, sale prices, ratings, colours and sizes so the storefront renders the design's data.
 - [ ] **3. Config module** — `src/config/configuration.ts`. All env vars validated with Joi or class-validator at startup. App refuses to start if required vars are missing.
 - [ ] **4. Common module** — global exception filter, `@CurrentUser` decorator, `JwtAuthGuard`, `RolesGuard`.
 

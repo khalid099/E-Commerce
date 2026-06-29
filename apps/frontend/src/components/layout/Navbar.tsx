@@ -1,93 +1,93 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingBag, ShoppingCart, LogOut, LayoutDashboard, User } from 'lucide-react';
+import { Search, User, ShoppingCart } from 'lucide-react';
+import { MaisonLogo } from './MaisonLogo';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
+import { useUiStore } from '@/store/uiStore';
 import { UserRole } from '@ecommerce/shared-types';
 
+const NAV_LINKS = [
+  { label: 'Shop', href: '/products' },
+  { label: 'New Arrivals', href: '/products?sortBy=newest' },
+  { label: 'Collections', href: '/products' },
+  { label: 'Orders', href: '/orders' },
+];
+
 export function Navbar() {
-  const { user, logout } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const itemCount = useCartStore((s) => s.cart?.itemCount ?? 0);
+  const cartBump = useUiStore((s) => s.cartBump);
+
+  const accountHref = user?.role === UserRole.ADMIN ? '/admin/dashboard' : '/orders';
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link
-          href="/products"
-          className="flex items-center gap-2 text-xl font-bold text-primary transition-opacity hover:opacity-80"
-        >
-          <ShoppingBag className="h-6 w-6" />
-          ShopHive
+    <header className="sticky top-0 z-[120] border-b border-maison-line bg-maison-cream/80 backdrop-blur-[14px]">
+      <div className="mx-auto flex h-[74px] max-w-[1280px] items-center justify-between gap-6 px-5 sm:px-8">
+        <Link href="/" aria-label="Maison home">
+          <MaisonLogo />
         </Link>
 
-        <nav className="flex items-center gap-5">
+        <nav className="hidden items-center gap-[34px] text-[14.5px] font-medium md:flex">
+          {NAV_LINKS.map((link, i) => (
+            <Link
+              key={`${link.label}-${i}`}
+              href={link.href}
+              className="text-maison-muted transition-colors hover:text-maison-clay"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-1">
           <Link
             href="/products"
-            className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+            aria-label="Search products"
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-full text-maison-muted transition-colors hover:bg-[#F0E9DE]"
           >
-            Shop
+            <Search className="h-[19px] w-[19px]" />
           </Link>
 
           {user ? (
-            <>
-              <Link
-                href="/cart"
-                className="relative text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
-                aria-label="Cart"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {itemCount > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                    {itemCount > 99 ? '99+' : itemCount}
-                  </span>
-                )}
-              </Link>
-
-              {user.role === UserRole.ADMIN && (
-                <Link
-                  href="/admin/dashboard"
-                  className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </Link>
-              )}
-
-              <div className="flex items-center gap-3">
-                <span className="hidden text-sm font-medium text-foreground/70 sm:block">
-                  {user.firstName}
-                </span>
-                <button
-                  onClick={() => logout()}
-                  className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  aria-label="Log out"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">Logout</span>
-                </button>
-              </div>
-            </>
+            <Link
+              href={accountHref}
+              className="flex items-center gap-2 rounded-full px-1.5 py-1 transition-colors hover:bg-[#F0E9DE]"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-maison-ink text-[13px] font-semibold text-maison-cream">
+                {user.firstName.charAt(0).toUpperCase()}
+              </span>
+              <span className="hidden text-[13.5px] font-medium text-maison-muted sm:block">
+                {user.firstName}
+              </span>
+            </Link>
           ) : (
-            <>
-              <Link
-                href="/cart"
-                className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
-                aria-label="Cart"
-              >
-                <ShoppingCart className="h-5 w-5" />
-              </Link>
-
-              <Link
-                href="/login"
-                className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
-              >
-                <User className="h-4 w-4" />
-                Login
-              </Link>
-            </>
+            <Link
+              href="/login"
+              aria-label="Sign in"
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full text-maison-muted transition-colors hover:bg-[#F0E9DE]"
+            >
+              <User className="h-[19px] w-[19px]" />
+            </Link>
           )}
-        </nav>
+
+          <Link
+            href="/cart"
+            aria-label={`Cart, ${itemCount} item${itemCount === 1 ? '' : 's'}`}
+            className="relative flex h-[42px] w-[42px] items-center justify-center rounded-full text-maison-muted transition-colors hover:bg-[#F0E9DE]"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {itemCount > 0 && (
+              <span
+                key={cartBump}
+                className="animate-pop absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-maison-clay px-1.5 text-[11px] font-bold text-white"
+              >
+                {itemCount > 99 ? '99+' : itemCount}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
     </header>
   );

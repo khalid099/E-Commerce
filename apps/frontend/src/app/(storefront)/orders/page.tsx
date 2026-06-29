@@ -2,29 +2,64 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Package, ChevronRight, ShoppingBag } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ProductTone } from '@/components/storefront/ProductTone';
+import { StatusBadge } from '@/components/storefront/StatusBadge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatPrice } from '@/lib/utils';
 import api from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
+import { money } from '@/lib/storefront';
 import type { Order, PaginatedResponse, ApiResponse } from '@ecommerce/shared-types';
-import { OrderStatus } from '@ecommerce/shared-types';
 
-const STATUS_STYLES: Record<OrderStatus, string> = {
-  [OrderStatus.PENDING]:    'bg-yellow-100 text-yellow-800',
-  [OrderStatus.PROCESSING]: 'bg-blue-100 text-blue-800',
-  [OrderStatus.SHIPPED]:    'bg-indigo-100 text-indigo-800',
-  [OrderStatus.DELIVERED]:  'bg-green-100 text-green-800',
-  [OrderStatus.CANCELLED]:  'bg-red-100 text-red-800',
-};
+export default function OrdersPage() {
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-function OrderStatusBadge({ status }: { status: OrderStatus }) {
+  useEffect(() => {
+    api
+      .get<ApiResponse<PaginatedResponse<Order>>>('/orders', { params: { page: 1, limit: 20 } })
+      .then((res) => setOrders(res.data.data.data))
+      .catch(() => setOrders([]))
+      .finally(() => setIsLoading(false));
+  }, []);
+
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}
-    >
-      {status.charAt(0) + status.slice(1).toLowerCase()}
-    </span>
+    <main className="mx-auto max-w-[880px] animate-page-in px-5 pb-12 pt-11 sm:px-8">
+      <div className="mb-7 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-[46px]">Your Orders</h1>
+          {user && <p className="mt-1.5 text-maison-subtle">Signed in as {user.email}</p>}
+        </div>
+        <button
+          onClick={() => logout()}
+          className="rounded-full border border-maison-stone px-5 py-2.5 text-[13.5px] font-semibold transition-colors hover:border-maison-clay hover:bg-white hover:text-maison-clay"
+        >
+          Sign out
+        </button>
+      </div>
+
+      {isLoading ? (
+        <OrdersSkeleton />
+      ) : orders.length === 0 ? (
+        <div className="rounded-[22px] border border-maison-line bg-white px-5 py-20 text-center">
+          <div className="mb-2 font-serif text-[30px]">No orders yet</div>
+          <p className="mb-[22px] text-maison-subtle">When you place an order, it will appear here.</p>
+          <Link
+            href="/products"
+            className="inline-block rounded-full bg-maison-clay px-7 py-3.5 font-semibold text-white"
+          >
+            Browse products
+          </Link>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-[18px]">
+          {orders.map((order) => (
+            <OrderCard key={order.id} order={order} />
+          ))}
+        </div>
+      )}
+    </main>
   );
 }
 
@@ -32,138 +67,67 @@ function OrderCard({ order }: { order: Order }) {
   return (
     <Link
       href={`/orders/${order.id}`}
-      className="group flex items-center justify-between rounded-lg border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-card/80"
+      className="block overflow-hidden rounded-[18px] border border-maison-line bg-white transition-colors hover:border-maison-clay/40"
     >
-      <div className="flex items-start gap-4">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
-          <Package className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">
-            Order #{order.id.slice(0, 8).toUpperCase()}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {new Date(order.createdAt).toLocaleDateString('en-GB', {
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-maison-line bg-maison-panel px-6 py-5">
+        <div className="flex flex-wrap gap-9">
+          <Meta label="ORDER" value={`#${order.id.slice(0, 8).toUpperCase()}`} />
+          <Meta
+            label="PLACED"
+            value={new Date(order.createdAt).toLocaleDateString('en-US', {
               day: 'numeric',
-              month: 'long',
+              month: 'short',
               year: 'numeric',
             })}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
-          </p>
+          />
+          <Meta label="TOTAL" value={money(order.total)} />
         </div>
+        <StatusBadge status={order.status} />
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <p className="text-sm font-semibold">{formatPrice(order.total)}</p>
-          <div className="mt-1">
-            <OrderStatusBadge status={order.status} />
+      <div className="flex flex-col gap-3.5 px-6 py-5">
+        {order.items.map((item) => (
+          <div key={item.id} className="flex items-center gap-3.5">
+            <ProductTone
+              name={item.productName}
+              initialClassName="text-[24px]"
+              className="h-12 w-12 flex-shrink-0 rounded-[10px]"
+            />
+            <div className="flex-1">
+              <div className="text-[14.5px] font-semibold">{item.productName}</div>
+              <div className="text-[12.5px] text-maison-subtle">Qty {item.quantity}</div>
+            </div>
+            <div className="text-sm font-semibold">{money(item.lineTotal)}</div>
           </div>
-        </div>
-        <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        ))}
       </div>
     </Link>
   );
 }
 
-function OrdersSkeleton() {
+function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="flex items-center justify-between rounded-lg border p-5">
-          <div className="flex items-start gap-4">
-            <Skeleton className="h-10 w-10 rounded-lg" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-          </div>
-          <div className="space-y-2 text-right">
-            <Skeleton className="ml-auto h-4 w-16" />
-            <Skeleton className="ml-auto h-5 w-20" />
-          </div>
-        </div>
-      ))}
+    <div>
+      <div className="text-[11px] tracking-[.6px] text-maison-subtle">{label}</div>
+      <div className="mt-0.5 text-sm font-bold">{value}</div>
     </div>
   );
 }
 
-export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setIsLoading(true);
-      try {
-        const res = await api.get<ApiResponse<PaginatedResponse<Order>>>('/orders', {
-          params: { page, limit: 10 },
-        });
-        setOrders(res.data.data.data);
-        setTotalPages(res.data.data.meta.totalPages);
-      } catch {
-        // handled by axios interceptor (401 → login redirect)
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [page]);
-
+function OrdersSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-10">
-      <h1 className="mb-8 text-3xl font-bold tracking-tight">My Orders</h1>
-
-      {isLoading ? (
-        <OrdersSkeleton />
-      ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <ShoppingBag className="mb-4 h-16 w-16 text-muted-foreground/40" />
-          <h2 className="mb-2 text-xl font-semibold">No orders yet</h2>
-          <p className="mb-6 text-muted-foreground">
-            Once you place an order, it will appear here.
-          </p>
-          <Button asChild>
-            <Link href="/products">Start Shopping</Link>
-          </Button>
+    <div className="flex flex-col gap-[18px]">
+      {[1, 2].map((i) => (
+        <div key={i} className="rounded-[18px] border border-maison-line bg-white">
+          <div className="border-b border-maison-line bg-maison-panel px-6 py-5">
+            <Skeleton className="h-10 w-2/3" />
+          </div>
+          <div className="space-y-3 px-6 py-5">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      ))}
     </div>
   );
 }
