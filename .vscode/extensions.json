@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "ms-azuretools.vscode-docker",
+    "github.copilot",
+    "mikestead.dotenv",
+    "ms-vscode.vscode-typescript-next",
+    "Prisma.prisma",
+    "humao.rest-client"
+  ]
+}

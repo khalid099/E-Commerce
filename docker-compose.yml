@@ -1,0 +1,85 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Development compose — hot-reload, source mounts, dev tooling
+# Usage: npm run docker:dev   (or: docker-compose up --build)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecommerce_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce_db}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ecommerce_db}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend (NestJS) ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: deps
+    container_name: ecommerce_backend_dev
+    restart: unless-stopped
+    command: npm run start:dev --workspace=apps/backend
+    environment:
+      NODE_ENV: development
+      PORT: ${API_PORT:-3001}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: ${POSTGRES_DB:-ecommerce_db}
+      DB_SYNCHRONIZE: 'true'
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - '${API_PORT:-3001}:3001'
+    volumes:
+      - ./apps/backend/src:/app/apps/backend/src
+      - ./packages/shared-types:/app/packages/shared-types
+      - backend_uploads:/app/apps/backend/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Frontend (Next.js) ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      target: deps
+    container_name: ecommerce_frontend_dev
+    restart: unless-stopped
+    command: npm run dev --workspace=apps/frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./apps/frontend/src:/app/apps/frontend/src
+      - ./packages/shared-types:/app/packages/shared-types
+    depends_on:
+      - backend
+
+volumes:
+  postgres_dev_data:
+  backend_uploads:

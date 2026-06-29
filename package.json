@@ -1,0 +1,38 @@
+{
+  "name": "ecommerce-platform",
+  "version": "1.0.0",
+  "description": "Full-stack e-commerce monorepo — NestJS API + Next.js storefront",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "turbo run format",
+    "test": "turbo run test",
+    "test:cov": "turbo run test:cov",
+    "test:e2e": "turbo run test:e2e",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rimraf node_modules",
+    "seed": "npm run seed --workspace=apps/backend",
+    "docker:dev": "docker-compose up --build",
+    "docker:dev:down": "docker-compose down",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up --build",
+    "docker:prod:down": "docker-compose -f docker-compose.prod.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "rimraf": "^5.0.0",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.8.0"
+}
