@@ -37,7 +37,7 @@ export class CartService {
   }
 
   private mapCart(cart: Cart): CartResponse {
-    const items: CartItemResponse[] = (cart.items ?? []).map((item) => ({
+    const items = (cart.items ?? []).map((item) => ({
       id: item.id,
       cartId: item.cartId,
       productId: item.productId,
@@ -51,7 +51,7 @@ export class CartService {
     return {
       id: cart.id,
       userId: cart.userId,
-      items,
+      items: items as unknown as CartItemResponse[],
       subtotal: items.reduce((sum, i) => sum + i.lineTotal, 0),
       itemCount: items.reduce((sum, i) => sum + i.quantity, 0),
       createdAt: cart.createdAt.toISOString(),
