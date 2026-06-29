@@ -114,15 +114,15 @@ export class CartService {
     return this.getCart(userId);
   }
 
-  // Validates a chosen variant against the options the product actually offers.
-  // Returns the chosen value, or null when the product has no such variant axis.
+  // Variant choice is optional. If nothing was chosen, store null; if a value
+  // was sent, it must be one the product actually offers (reject bogus input).
   private resolveVariant(
     options: string[] | null,
     chosen: string | undefined,
     label: string,
   ): string | null {
-    if (!options || options.length === 0) return null;
-    if (!chosen || !options.includes(chosen)) {
+    if (!chosen) return null;
+    if (!options || !options.includes(chosen)) {
       throw new BadRequestException(`Please select a valid ${label}`);
     }
     return chosen;

@@ -14,6 +14,7 @@ import { Product } from '../products/entities/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { PaymentsService } from '../payments/payments.service';
 import type {
   Order as OrderResponse,
   PaginatedResponse,
@@ -45,6 +46,7 @@ export class OrdersService {
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
     private readonly dataSource: DataSource,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   private mapOrder(order: Order): OrderResponse {
@@ -93,6 +95,30 @@ export class OrdersService {
       throw new BadRequestException('Cart is empty');
     }
 
+    // Totals are computed server-side from current product prices (never trusted
+    // from the client) — and computed up-front so we can verify the payment
+    // covered exactly this amount before touching stock.
+    const subtotal = cart.items.reduce(
+      (sum, i) => sum + Number(i.product.price) * i.quantity,
+      0,
+    );
+    const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
+    const total = Math.round((subtotal + tax) * 100) / 100;
+
+    // A real, succeeded Stripe PaymentIntent is required to create a paid order.
+    // We verify it belongs to this user and matches the total, and that it has
+    // not already been consumed by another order (no double-spend of one intent).
+    if (!dto.paymentIntentId) {
+      throw new BadRequestException('Payment is required');
+    }
+    const reused = await this.orderRepo.findOne({
+      where: { stripePaymentIntentId: dto.paymentIntentId },
+    });
+    if (reused) {
+      throw new ConflictException('This payment has already been used');
+    }
+    await this.paymentsService.assertPaid(dto.paymentIntentId, userId, total);
+
     return this.dataSource.transaction(async (manager) => {
       // Atomic stock decrement for each item — fail fast on insufficient stock
       for (const cartItem of cart.items) {
@@ -113,24 +139,16 @@ export class OrdersService {
         }
       }
 
-      // Compute totals server-side from current product prices (price snapshot)
-      const subtotal = cart.items.reduce(
-        (sum, i) => sum + Number(i.product.price) * i.quantity,
-        0,
-      );
-      const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
-      const total = Math.round((subtotal + tax) * 100) / 100;
-
-      // Create order
+      // Payment already succeeded, so the order opens in PROCESSING.
       const order = manager.create(Order, {
         userId,
-        status: OrderStatus.PENDING,
+        status: OrderStatus.PROCESSING,
         subtotal,
         tax,
         shippingCost: 0,
         total,
         shippingAddress: dto.shippingAddress,
-        stripePaymentIntentId: dto.paymentIntentId ?? null,
+        stripePaymentIntentId: dto.paymentIntentId,
       });
       const savedOrder = await manager.save(Order, order);
 

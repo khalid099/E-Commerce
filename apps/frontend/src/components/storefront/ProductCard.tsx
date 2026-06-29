@@ -1,8 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { Plus, Minus, Trash2, Heart } from 'lucide-react';
 import { ProductTone } from './ProductTone';
 import { useAddToCart } from '@/hooks/useAddToCart';
+import { useWishlist } from '@/hooks/useWishlist';
+import { useCartStore } from '@/store/cartStore';
+import { useUiStore } from '@/store/uiStore';
+import { cn } from '@/lib/utils';
 import { money, stars } from '@/lib/storefront';
 import type { Product } from '@ecommerce/shared-types';
 
@@ -22,13 +28,49 @@ interface ProductCardProps {
 export function ProductCard({ product, isNew = false, showRating = false }: ProductCardProps) {
   const inStock = product.stockQuantity > 0;
   const { add, isAdding } = useAddToCart();
+  const cart = useCartStore((s) => s.cart);
+  const updateItem = useCartStore((s) => s.updateItem);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const bumpCart = useUiStore((s) => s.bumpCart);
+  const { wishlisted, toggle: toggleWish, isToggling } = useWishlist(product.id);
+  const [busy, setBusy] = useState(false);
+
   const compareAt = product.compareAtPrice != null ? Number(product.compareAtPrice) : null;
   const onSale = compareAt != null && compareAt > Number(product.price);
 
-  const handleAdd = async (e: React.MouseEvent) => {
+  const handleWish = (e: React.MouseEvent) => {
+    stop(e);
+    toggleWish(product);
+  };
+
+  // The line this card's quick-add owns: the variant-less entry for this product.
+  // Variant-specific lines added from the detail page are managed in the cart page.
+  const quickLine = cart?.items.find(
+    (i) => i.productId === product.id && !i.selectedColor && !i.selectedSize,
+  );
+  const atStockCap = !!quickLine && quickLine.quantity >= product.stockQuantity;
+
+  const stop = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+  };
+
+  const handleAdd = async (e: React.MouseEvent) => {
+    stop(e);
     await add(product, 1);
+  };
+
+  const changeQty = async (e: React.MouseEvent, next: number) => {
+    stop(e);
+    if (!quickLine || busy) return;
+    setBusy(true);
+    try {
+      if (next < 1) await removeItem(quickLine.id);
+      else await updateItem(quickLine.id, next);
+      bumpCart();
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -44,6 +86,24 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
           shade
           className="absolute inset-0"
         />
+
+        <button
+          type="button"
+          onClick={handleWish}
+          disabled={isToggling}
+          aria-label={
+            wishlisted ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`
+          }
+          aria-pressed={wishlisted}
+          className="absolute right-3 top-3 z-[2] flex h-9 w-9 items-center justify-center rounded-full bg-white/85 shadow-[0_4px_12px_rgba(0,0,0,.12)] backdrop-blur-[6px] transition-all duration-200 hover:scale-110 disabled:opacity-60"
+        >
+          <Heart
+            className={cn(
+              'h-[17px] w-[17px] transition-colors',
+              wishlisted ? 'fill-maison-clay text-maison-clay' : 'text-maison-ink',
+            )}
+          />
+        </button>
 
         {onSale ? (
           <div className="absolute left-3 top-3 rounded-full bg-maison-clay px-2.5 py-[5px] text-[11px] font-bold uppercase tracking-[.8px] text-white">
@@ -61,15 +121,50 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
           <div className="absolute inset-0 flex items-center justify-center bg-maison-cream/70 text-[13px] font-bold tracking-[1px] text-maison-subtle">
             SOLD OUT
           </div>
+        ) : quickLine ? (
+          <div
+            onClick={stop}
+            className="absolute bottom-3 right-3 flex animate-fade-in items-center gap-0.5 rounded-full bg-maison-clay p-1 text-white shadow-[0_6px_18px_rgba(199,91,57,.45)] backdrop-blur-[6px]"
+          >
+            <button
+              type="button"
+              onClick={(e) => changeQty(e, quickLine.quantity - 1)}
+              disabled={busy}
+              aria-label={
+                quickLine.quantity <= 1
+                  ? `Remove ${product.name} from cart`
+                  : `Decrease ${product.name} quantity`
+              }
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/20 disabled:opacity-50"
+            >
+              {quickLine.quantity <= 1 ? (
+                <Trash2 className="h-[15px] w-[15px]" />
+              ) : (
+                <Minus className="h-[15px] w-[15px]" />
+              )}
+            </button>
+            <span className="min-w-[18px] text-center text-[13.5px] font-bold tabular-nums">
+              {busy ? '·' : quickLine.quantity}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => changeQty(e, quickLine.quantity + 1)}
+              disabled={busy || atStockCap}
+              aria-label={`Increase ${product.name} quantity`}
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/20 disabled:opacity-40"
+            >
+              <Plus className="h-[15px] w-[15px]" />
+            </button>
+          </div>
         ) : (
           <button
             type="button"
             onClick={handleAdd}
             disabled={isAdding}
             aria-label={`Add ${product.name} to cart`}
-            className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[22px] font-light text-maison-ink shadow-[0_4px_14px_rgba(0,0,0,.12)] backdrop-blur-[6px] transition-all duration-200 hover:scale-110 hover:bg-maison-clay hover:text-white disabled:opacity-60"
+            className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-maison-ink shadow-[0_4px_14px_rgba(0,0,0,.12)] backdrop-blur-[6px] transition-all duration-200 hover:scale-110 hover:bg-maison-clay hover:text-white disabled:opacity-60"
           >
-            +
+            <Plus className="h-5 w-5" strokeWidth={2} />
           </button>
         )}
       </div>

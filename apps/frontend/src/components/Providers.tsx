@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { store } from '@/store/store';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 
 function AuthInitializer() {
   const fetchMe = useAuthStore((s) => s.fetchMe);
@@ -33,11 +34,28 @@ function CartInitializer() {
   return null;
 }
 
+function WishlistInitializer() {
+  const user = useAuthStore((s) => s.user);
+  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
+  const reset = useWishlistStore((s) => s.reset);
+
+  useEffect(() => {
+    if (user) {
+      fetchWishlist();
+    } else {
+      reset();
+    }
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
       <AuthInitializer />
       <CartInitializer />
+      <WishlistInitializer />
       {children}
       <Toaster position="top-right" />
     </Provider>

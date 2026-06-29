@@ -1,32 +1,40 @@
 'use client';
 
 import { useState } from 'react';
+import { Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { PasswordField } from '@/components/auth/PasswordField';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
 import { cn } from '@/lib/utils';
 import type { User } from '@ecommerce/shared-types';
 
-const schema = z.object({
-  // Backend stores first/last separately; we collect one field and split it.
-  fullName: z
-    .string()
-    .trim()
-    .refine((v) => v.split(/\s+/).length >= 2, 'Enter your first and last name'),
-  email: z.string().email('Enter a valid email address'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Include an uppercase letter')
-    .regex(/[a-z]/, 'Include a lowercase letter')
-    .regex(/\d/, 'Include a number'),
-});
+const schema = z
+  .object({
+    // Backend stores first/last separately; we collect one field and split it.
+    fullName: z
+      .string()
+      .trim()
+      .refine((v) => v.split(/\s+/).length >= 2, 'Enter your first and last name'),
+    email: z.string().email('Enter a valid email address'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Include an uppercase letter')
+      .regex(/[a-z]/, 'Include a lowercase letter')
+      .regex(/\d/, 'Include a number'),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 type FormData = z.infer<typeof schema>;
 
 export default function RegisterPage() {
@@ -37,8 +45,18 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  // Live password requirements — each turns green as the rule is satisfied.
+  const pw = watch('password') ?? '';
+  const rules = [
+    { label: 'At least 8 characters', met: pw.length >= 8 },
+    { label: 'An uppercase letter', met: /[A-Z]/.test(pw) },
+    { label: 'A lowercase letter', met: /[a-z]/.test(pw) },
+    { label: 'A number', met: /\d/.test(pw) },
+  ];
 
   const onSubmit = async (data: FormData) => {
     setServerError('');
@@ -99,21 +117,47 @@ export default function RegisterPage() {
         />
         {errors.email && <p className="mt-1.5 text-[12.5px] text-maison-clay">{errors.email.message}</p>}
 
-        <label htmlFor="password" className="mb-1.5 mt-4 text-[12.5px] font-semibold text-[#6C6358]">
-          Password
-        </label>
-        <input
+        <PasswordField
           id="password"
-          type="password"
-          autoComplete="new-password"
+          label="Password"
           placeholder="At least 8 characters"
-          {...register('password')}
-          aria-invalid={!!errors.password}
-          className={fieldCls(!!errors.password)}
+          autoComplete="new-password"
+          registration={register('password')}
+          error={errors.password?.message}
+          className="mt-4"
         />
-        {errors.password && (
-          <p className="mt-1.5 text-[12.5px] text-maison-clay">{errors.password.message}</p>
-        )}
+
+        <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
+          {rules.map((rule) => (
+            <li
+              key={rule.label}
+              className={cn(
+                'flex items-center gap-1.5 text-[11.5px] transition-colors',
+                rule.met ? 'text-maison-leaf' : 'text-maison-subtle',
+              )}
+            >
+              <span
+                className={cn(
+                  'flex h-[14px] w-[14px] flex-shrink-0 items-center justify-center rounded-full',
+                  rule.met ? 'bg-maison-leaf text-white' : 'border border-maison-line-strong',
+                )}
+              >
+                {rule.met && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+              </span>
+              {rule.label}
+            </li>
+          ))}
+        </ul>
+
+        <PasswordField
+          id="confirmPassword"
+          label="Confirm password"
+          placeholder="Re-enter your password"
+          autoComplete="new-password"
+          registration={register('confirmPassword')}
+          error={errors.confirmPassword?.message}
+          className="mt-4"
+        />
 
         {serverError && (
           <p className="mt-2.5 text-[12.5px] font-medium text-maison-clay">{serverError}</p>

@@ -29,7 +29,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Customer-only routes: require any authenticated user
-  const protectedPaths = ['/cart', '/checkout', '/orders'];
+  const protectedPaths = ['/cart', '/checkout', '/orders', '/wishlist'];
   if (protectedPaths.some((p) => pathname.startsWith(p)) && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -38,5 +38,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/cart/:path*', '/checkout/:path*', '/orders/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/cart/:path*',
+    '/checkout/:path*',
+    '/orders/:path*',
+    '/wishlist/:path*',
+  ],
 };

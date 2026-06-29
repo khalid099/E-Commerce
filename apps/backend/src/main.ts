@@ -9,7 +9,9 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // rawBody captures the unparsed request body so the Stripe webhook can verify
+  // its signature against the exact bytes Stripe signed.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   const configService = app.get(ConfigService);
   const reflector = app.get(Reflector);
 

@@ -63,17 +63,21 @@ interface CategorySeed {
   name: string;
   slug: string;
   description: string;
+  imageUrl: string;
 }
 
+// Wider crop for the full-bleed collection cards.
+const catImg = (id: string) => img(id, 1200);
+
 const CATEGORIES: CategorySeed[] = [
-  { name: 'Bags', slug: 'bags', description: 'Structured totes, crossbodies and weekenders made to carry a lifetime.' },
-  { name: 'Shoes', slug: 'shoes', description: 'Court sneakers, suede lows and everyday leather, built for the long walk home.' },
-  { name: 'Watches', slug: 'watches', description: 'Automatic chronographs and minimalist dials, quietly confident on the wrist.' },
-  { name: 'Eyewear', slug: 'eyewear', description: 'Hand-polished acetate frames with polarised, UV-400 lenses.' },
-  { name: 'Apparel', slug: 'apparel', description: 'Responsibly sourced knits, blouses and essentials made to last.' },
-  { name: 'Hats', slug: 'hats', description: 'Packable fedoras and woven brims that shape back instantly.' },
-  { name: 'Jewelry', slug: 'jewelry', description: 'Considered pieces in solid metals and natural stones.' },
-  { name: 'Fragrance', slug: 'fragrance', description: 'Slow-blended scents in refillable apothecary glass.' },
+  { name: 'Bags', slug: 'bags', description: 'Structured totes, crossbodies and weekenders made to carry a lifetime.', imageUrl: catImg('1548036328-c9fa89d128fa') },
+  { name: 'Shoes', slug: 'shoes', description: 'Court sneakers, suede lows and everyday leather, built for the long walk home.', imageUrl: catImg('1542291026-7eec264c27ff') },
+  { name: 'Watches', slug: 'watches', description: 'Automatic chronographs and minimalist dials, quietly confident on the wrist.', imageUrl: catImg('1523275335684-37898b6baf30') },
+  { name: 'Eyewear', slug: 'eyewear', description: 'Hand-polished acetate frames with polarised, UV-400 lenses.', imageUrl: catImg('1577803645773-f96470509666') },
+  { name: 'Apparel', slug: 'apparel', description: 'Responsibly sourced knits, blouses and essentials made to last.', imageUrl: catImg('1521572163474-6864f9cf17ab') },
+  { name: 'Hats', slug: 'hats', description: 'Packable fedoras and woven brims that shape back instantly.', imageUrl: catImg('1534215754734-18e55d13e346') },
+  { name: 'Jewelry', slug: 'jewelry', description: 'Considered pieces in solid metals and natural stones.', imageUrl: catImg('1611591437281-460bfbe1220a') },
+  { name: 'Fragrance', slug: 'fragrance', description: 'Slow-blended scents in refillable apothecary glass.', imageUrl: catImg('1541643600914-78b084683601') },
 ];
 
 interface ProductSeed {

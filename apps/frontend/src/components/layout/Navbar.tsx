@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, User, ShoppingCart } from 'lucide-react';
+import { Heart, User, ShoppingCart } from 'lucide-react';
 import { MaisonLogo } from './MaisonLogo';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import { useUiStore } from '@/store/uiStore';
 import { UserRole } from '@ecommerce/shared-types';
 
@@ -18,6 +19,7 @@ const NAV_LINKS = [
 export function Navbar() {
   const user = useAuthStore((s) => s.user);
   const itemCount = useCartStore((s) => s.cart?.itemCount ?? 0);
+  const wishCount = useWishlistStore((s) => s.items.length);
   const cartBump = useUiStore((s) => s.cartBump);
 
   const accountHref = user?.role === UserRole.ADMIN ? '/admin/dashboard' : '/orders';
@@ -42,14 +44,6 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-1">
-          <Link
-            href="/products"
-            aria-label="Search products"
-            className="flex h-[42px] w-[42px] items-center justify-center rounded-full text-maison-muted transition-colors hover:bg-[#F0E9DE]"
-          >
-            <Search className="h-[19px] w-[19px]" />
-          </Link>
-
           {user ? (
             <Link
               href={accountHref}
@@ -71,6 +65,19 @@ export function Navbar() {
               <User className="h-[19px] w-[19px]" />
             </Link>
           )}
+
+          <Link
+            href="/wishlist"
+            aria-label={`Wishlist, ${wishCount} item${wishCount === 1 ? '' : 's'}`}
+            className="relative flex h-[42px] w-[42px] items-center justify-center rounded-full text-maison-muted transition-colors hover:bg-[#F0E9DE]"
+          >
+            <Heart className="h-[19px] w-[19px]" />
+            {wishCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-maison-clay px-1.5 text-[11px] font-bold text-white">
+                {wishCount > 99 ? '99+' : wishCount}
+              </span>
+            )}
+          </Link>
 
           <Link
             href="/cart"

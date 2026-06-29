@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Truck, RotateCcw } from 'lucide-react';
+import { Truck, RotateCcw, Heart } from 'lucide-react';
 import { useGetProductQuery, useGetProductsQuery } from '@/store/productsApi';
 import { ProductTone } from './ProductTone';
 import { ProductCard } from './ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAddToCart } from '@/hooks/useAddToCart';
+import { useWishlist } from '@/hooks/useWishlist';
 import { money, stars } from '@/lib/storefront';
 import { cn } from '@/lib/utils';
 
@@ -16,11 +17,11 @@ export function ProductDetailContent({ id }: { id: string }) {
   const router = useRouter();
   const { data: product, isLoading, isError } = useGetProductQuery(id);
   const { add, isAdding } = useAddToCart();
+  const { wishlisted, toggle: toggleWish, isToggling } = useWishlist(id);
   const [qty, setQty] = useState(1);
   const [activeThumb, setActiveThumb] = useState(0);
   const [activeColor, setActiveColor] = useState<string | null>(null);
   const [activeSize, setActiveSize] = useState<string | null>(null);
-  const [variantError, setVariantError] = useState('');
 
   // Pre-select the first colour swatch once the product loads, so a product
   // with colours always has a valid default selection.
@@ -61,26 +62,9 @@ export function ProductDetailContent({ id }: { id: string }) {
   const savePct = onSale ? Math.round((1 - Number(product.price) / compareAt!) * 100) : 0;
   const related = (relatedPage?.data ?? []).filter((p) => p.id !== product.id).slice(0, 4);
 
-  // Require an explicit choice for every variant axis the product offers
-  // before it can reach the cart. Returns false (and surfaces the error) if not.
-  const ensureVariant = () => {
-    if (product.colors?.length && !activeColor) {
-      setVariantError('Please select a colour');
-      return false;
-    }
-    if (product.sizes?.length && !activeSize) {
-      setVariantError('Please select a size');
-      return false;
-    }
-    setVariantError('');
-    return true;
-  };
-
-  const handleAdd = () => {
-    if (ensureVariant()) add(product, qty, activeColor, activeSize);
-  };
+  // Colour and size are optional — whatever is selected is passed through.
+  const handleAdd = () => add(product, qty, activeColor, activeSize);
   const handleBuyNow = async () => {
-    if (!ensureVariant()) return;
     const ok = await add(product, qty, activeColor, activeSize);
     if (ok) router.push('/checkout');
   };
@@ -199,10 +183,7 @@ export function ProductDetailContent({ id }: { id: string }) {
                   <button
                     key={s}
                     type="button"
-                    onClick={() => {
-                      setActiveSize(s);
-                      setVariantError('');
-                    }}
+                    onClick={() => setActiveSize(s)}
                     aria-pressed={activeSize === s}
                     className={cn(
                       'min-w-[50px] rounded-[9px] border px-3.5 py-2.5 text-[13.5px] font-bold transition-colors',
@@ -231,11 +212,6 @@ export function ProductDetailContent({ id }: { id: string }) {
 
           {inStock && (
             <>
-              {variantError && (
-                <p role="alert" className="mb-3 text-[13px] font-semibold text-maison-clay">
-                  {variantError}
-                </p>
-              )}
               <div className="mb-[18px] flex items-center gap-3.5">
                 <div className="flex items-center overflow-hidden rounded-full border border-maison-line-strong bg-white">
                   <button
@@ -265,12 +241,27 @@ export function ProductDetailContent({ id }: { id: string }) {
               <button
                 onClick={handleBuyNow}
                 disabled={isAdding}
-                className="mb-7 h-[52px] w-full rounded-full bg-maison-ink text-[15.5px] font-semibold text-maison-cream transition-colors hover:bg-black disabled:opacity-60"
+                className="mb-3 h-[52px] w-full rounded-full bg-maison-ink text-[15.5px] font-semibold text-maison-cream transition-colors hover:bg-black disabled:opacity-60"
               >
                 Buy it now
               </button>
             </>
           )}
+
+          <button
+            onClick={() => toggleWish(product)}
+            disabled={isToggling}
+            aria-pressed={wishlisted}
+            className={cn(
+              'mb-7 flex h-[52px] w-full items-center justify-center gap-2.5 rounded-full border text-[15.5px] font-semibold transition-colors disabled:opacity-60',
+              wishlisted
+                ? 'border-maison-clay bg-[rgba(199,91,57,.08)] text-maison-clay'
+                : 'border-maison-line-strong text-maison-ink hover:border-maison-ink',
+            )}
+          >
+            <Heart className={cn('h-[18px] w-[18px]', wishlisted && 'fill-maison-clay')} />
+            {wishlisted ? 'Saved to wishlist' : 'Add to wishlist'}
+          </button>
 
           <div className="border-t border-maison-line pt-6">
             <div className="mb-3.5 text-[14.5px] font-bold">Product details</div>

@@ -3,6 +3,8 @@ export interface Category {
   name: string;
   slug: string;
   description: string | null;
+  /** Hero image for the collection card; null falls back to the tonal placeholder. */
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
