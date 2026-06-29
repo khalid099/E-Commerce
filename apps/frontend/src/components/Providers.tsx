@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
+import { Toaster } from 'react-hot-toast';
 import { store } from '@/store/store';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
@@ -38,6 +39,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AuthInitializer />
       <CartInitializer />
       {children}
+      <Toaster position="top-right" />
     </Provider>
   );
 }

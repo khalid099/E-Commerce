@@ -263,7 +263,7 @@ Work in this exact sequence. Each item is a commit. Do not skip ahead.
 
 ### Phase 3 — Catalog (read paths first)
 - [ ] **6. Categories module** — `GET /categories`, `POST /admin/categories`.
-- [ ] **7. Products module** — `GET /products` with filtering/search/sort/pagination, `GET /products/:id`, admin CRUD + image upload.
+- [x] **7. Products module** — `GET /products` with filtering/search/sort/pagination, `GET /products/:id`, admin CRUD + image upload.
 
 ### Phase 4 — Cart & Checkout
 - [ ] **8. Cart module** — full CRUD, ownership enforced, line totals computed in service.
@@ -282,7 +282,7 @@ Work in this exact sequence. Each item is a commit. Do not skip ahead.
 - [ ] **17. Storefront — cart** — line items, totals, quantity updates.
 - [ ] **18. Storefront — checkout** — Stripe Elements, place order, success page.
 - [ ] **19. Storefront — orders** — order history list, order detail.
-- [ ] **20. Admin — products** — CRUD table, create/edit form, image upload.
+- [x] **20. Admin — products** — CRUD table, create/edit form, image upload.
 - [ ] **21. Admin — orders** — all orders table, status update dropdown.
 - [ ] **22. Admin — dashboard** — stats cards + revenue line chart (Recharts).
 

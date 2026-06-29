@@ -14,6 +14,7 @@ export interface Product {
   price: number;
   imageUrl: string | null;
   stockQuantity: number;
+  isActive: boolean;
   category: Category;
   categoryId: string;
   createdAt: string;
@@ -41,4 +42,4 @@ export interface CreateProductDto {
   imageUrl?: string;
 }
 
-export type UpdateProductDto = Partial<CreateProductDto>;
+export type UpdateProductDto = Partial<CreateProductDto> & { isActive?: boolean };
