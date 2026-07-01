@@ -53,6 +53,11 @@ export class Product {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  // Marks a product as a new arrival — surfaces the NEW badge and populates the
+  // New Arrivals view. Kept distinct from a sale item; the two are mutually exclusive.
+  @Column({ name: 'is_new', default: false })
+  isNew: boolean;
+
   @ManyToOne(() => Category, (category) => category.products, { eager: false })
   @JoinColumn({ name: 'category_id' })
   category: Category;

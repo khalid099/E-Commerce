@@ -7,6 +7,7 @@ export interface ProductQueryParams {
   minPrice?: string;
   maxPrice?: string;
   sortBy?: string;
+  isNew?: string;
   page?: string;
   limit?: string;
 }

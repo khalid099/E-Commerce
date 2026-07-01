@@ -27,9 +27,9 @@ const schema = z.object({
 
 type FormValues = z.input<typeof schema>;
 
-const LABEL = 'mb-1.5 block text-[12.5px] font-semibold text-[#6C6358]';
+const LABEL = 'mb-1.5 block text-[12.5px] font-semibold text-maison-muted';
 const FIELD =
-  'w-full rounded-[11px] border bg-white px-[15px] py-[13px] text-[14.5px] text-maison-ink outline-none transition-colors focus:border-maison-clay';
+  'w-full rounded-[11px] border bg-white px-[15px] py-[13px] text-[14.5px] text-maison-ink outline-none transition-colors focus:border-maison-clay dark:bg-maison-panel';
 
 interface ProductModalProps {
   /** The product being edited; omit to create. */
@@ -137,11 +137,11 @@ export function ProductModal({ product, categories, onClose, onSaved }: ProductM
         role="dialog"
         aria-modal="true"
         aria-label={isEdit ? 'Edit product' : 'Add product'}
-        className="max-h-[90vh] w-full max-w-[620px] animate-modal-in overflow-y-auto rounded-[22px] bg-white shadow-[0_40px_90px_rgba(33,28,22,0.32)]"
+        className="max-h-[90vh] w-full max-w-[620px] animate-modal-in overflow-y-auto rounded-[22px] bg-white shadow-[0_40px_90px_rgba(33,28,22,0.32)] dark:bg-maison-panel"
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className="sticky top-0 flex items-center justify-between rounded-t-[22px] border-b border-maison-line bg-white px-[30px] py-[26px]">
+        <div className="sticky top-0 flex items-center justify-between rounded-t-[22px] border-b border-maison-line bg-white px-[30px] py-[26px] dark:bg-maison-panel">
           <div>
             <div className="text-xs font-semibold tracking-[1.2px] text-maison-clay">
               {isEdit ? 'EDIT PRODUCT' : 'NEW PRODUCT'}
@@ -154,7 +154,7 @@ export function ProductModal({ product, categories, onClose, onSaved }: ProductM
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#F4ECE0] text-maison-muted transition-colors hover:bg-[#E9DECF]"
+            className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#F4ECE0] text-maison-muted transition-colors hover:bg-[#E9DECF] dark:bg-maison-line dark:hover:bg-maison-stone"
           >
             <X className="h-[18px] w-[18px]" />
           </button>
@@ -185,7 +185,7 @@ export function ProductModal({ product, categories, onClose, onSaved }: ProductM
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="flex items-center gap-[7px] rounded-[9px] border border-maison-stone bg-white px-4 py-[9px] text-[13px] font-semibold text-maison-ink transition-colors hover:border-maison-clay hover:text-maison-clay"
+                    className="flex items-center gap-[7px] rounded-[9px] border border-maison-stone bg-white px-4 py-[9px] text-[13px] font-semibold text-maison-ink transition-colors hover:border-maison-clay hover:text-maison-clay dark:bg-maison-panel"
                   >
                     <Upload className="h-[15px] w-[15px]" />
                     Upload file
@@ -321,7 +321,7 @@ export function ProductModal({ product, categories, onClose, onSaved }: ProductM
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-maison-stone bg-white px-6 py-[13px] text-[14.5px] font-semibold text-maison-ink transition-colors hover:bg-[#F4ECE0]"
+              className="rounded-full border border-maison-stone bg-white px-6 py-[13px] text-[14.5px] font-semibold text-maison-ink transition-colors hover:bg-[#F4ECE0] dark:bg-maison-panel dark:hover:bg-maison-line"
             >
               Cancel
             </button>

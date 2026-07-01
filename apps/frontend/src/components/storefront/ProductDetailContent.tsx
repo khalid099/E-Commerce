@@ -7,15 +7,17 @@ import { Truck, RotateCcw, Heart } from 'lucide-react';
 import { useGetProductQuery, useGetProductsQuery } from '@/store/productsApi';
 import { ProductTone } from './ProductTone';
 import { ProductCard } from './ProductCard';
+import { ProductReviews } from './ProductReviews';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StarRating } from '@/components/ui/StarRating';
 import { useAddToCart } from '@/hooks/useAddToCart';
 import { useWishlist } from '@/hooks/useWishlist';
-import { money, stars } from '@/lib/storefront';
+import { money } from '@/lib/storefront';
 import { cn } from '@/lib/utils';
 
 export function ProductDetailContent({ id }: { id: string }) {
   const router = useRouter();
-  const { data: product, isLoading, isError } = useGetProductQuery(id);
+  const { data: product, isLoading, isError, refetch } = useGetProductQuery(id);
   const { add, isAdding } = useAddToCart();
   const { wishlisted, toggle: toggleWish, isToggling } = useWishlist(id);
   const [qty, setQty] = useState(1);
@@ -46,7 +48,7 @@ export function ProductDetailContent({ id }: { id: string }) {
         <p className="mb-6 text-maison-subtle">This product doesn&apos;t exist or is unavailable.</p>
         <Link
           href="/products"
-          className="inline-block rounded-full bg-maison-ink px-6 py-3 font-semibold text-white"
+          className="inline-block rounded-full bg-maison-ink px-6 py-3 font-semibold text-maison-cream"
         >
           Back to shop
         </Link>
@@ -123,11 +125,14 @@ export function ProductDetailContent({ id }: { id: string }) {
           <h1 className="mb-3.5 mt-2.5 font-serif text-[42px] leading-[1.08]">{product.name}</h1>
 
           {rating != null && (
-            <div className="mb-5 flex items-center gap-3">
-              <span className="text-base tracking-[1px] text-maison-clay">{stars(rating)}</span>
-              <span className="text-[13.5px] text-maison-subtle">
-                {rating.toFixed(1)} · {reviews} reviews
-              </span>
+            <div className="mb-5 flex items-center gap-2.5">
+              <StarRating value={rating} size={17} />
+              <a
+                href="#reviews"
+                className="text-[13.5px] text-maison-subtle transition-colors hover:text-maison-clay"
+              >
+                {rating.toFixed(1)} · {reviews} review{reviews === 1 ? '' : 's'}
+              </a>
             </div>
           )}
 
@@ -165,8 +170,8 @@ export function ProductDetailContent({ id }: { id: string }) {
                     className={cn(
                       'h-[34px] w-[34px] rounded-full ring-2 ring-maison-cream transition-shadow',
                       activeColor === c.name
-                        ? 'shadow-[0_0_0_2px_var(--tw-ring-color),0_0_0_4px_#C75B39]'
-                        : 'shadow-[0_0_0_1px_#E2D8C7]',
+                        ? 'shadow-[0_0_0_2px_var(--tw-ring-color),0_0_0_4px_#C75B39] dark:shadow-[0_0_0_2px_var(--tw-ring-color),0_0_0_4px_#D97452]'
+                        : 'shadow-[0_0_0_1px_#E2D8C7] dark:shadow-[0_0_0_1px_rgba(240,233,222,.18)]',
                     )}
                     style={{ backgroundColor: c.hex }}
                   />
@@ -188,8 +193,8 @@ export function ProductDetailContent({ id }: { id: string }) {
                     className={cn(
                       'min-w-[50px] rounded-[9px] border px-3.5 py-2.5 text-[13.5px] font-bold transition-colors',
                       activeSize === s
-                        ? 'border-maison-ink bg-maison-ink text-white'
-                        : 'border-maison-line-strong bg-white text-maison-ink hover:border-maison-ink',
+                        ? 'border-maison-ink bg-maison-ink text-maison-cream'
+                        : 'border-maison-line-strong bg-white text-maison-ink hover:border-maison-ink dark:bg-maison-panel',
                     )}
                   >
                     {s}
@@ -213,11 +218,11 @@ export function ProductDetailContent({ id }: { id: string }) {
           {inStock && (
             <>
               <div className="mb-[18px] flex items-center gap-3.5">
-                <div className="flex items-center overflow-hidden rounded-full border border-maison-line-strong bg-white">
+                <div className="flex items-center overflow-hidden rounded-full border border-maison-line-strong bg-white dark:bg-maison-panel">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
                     aria-label="Decrease quantity"
-                    className="h-[52px] w-12 text-[22px] text-maison-muted transition-colors hover:bg-[#F4ECE0]"
+                    className="h-[52px] w-12 text-[22px] text-maison-muted transition-colors hover:bg-[#F4ECE0] dark:hover:bg-maison-cream"
                   >
                     &minus;
                   </button>
@@ -225,7 +230,7 @@ export function ProductDetailContent({ id }: { id: string }) {
                   <button
                     onClick={() => setQty((q) => Math.min(product.stockQuantity, q + 1))}
                     aria-label="Increase quantity"
-                    className="h-[52px] w-12 text-[22px] text-maison-muted transition-colors hover:bg-[#F4ECE0]"
+                    className="h-[52px] w-12 text-[22px] text-maison-muted transition-colors hover:bg-[#F4ECE0] dark:hover:bg-maison-cream"
                   >
                     +
                   </button>
@@ -241,7 +246,7 @@ export function ProductDetailContent({ id }: { id: string }) {
               <button
                 onClick={handleBuyNow}
                 disabled={isAdding}
-                className="mb-3 h-[52px] w-full rounded-full bg-maison-ink text-[15.5px] font-semibold text-maison-cream transition-colors hover:bg-black disabled:opacity-60"
+                className="mb-3 h-[52px] w-full rounded-full bg-maison-ink text-[15.5px] font-semibold text-maison-cream transition-colors hover:bg-maison-ink/90 disabled:opacity-60"
               >
                 Buy it now
               </button>
@@ -278,6 +283,11 @@ export function ProductDetailContent({ id }: { id: string }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Reviews */}
+      <div id="reviews" className="scroll-mt-24">
+        <ProductReviews productId={product.id} onAggregateChange={refetch} />
       </div>
 
       {/* Related */}

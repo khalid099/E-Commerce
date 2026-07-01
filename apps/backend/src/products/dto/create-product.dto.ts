@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsPositive,
   IsOptional,
+  IsBoolean,
   IsUUID,
   IsArray,
   IsInt,
@@ -91,4 +92,9 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   sizes?: string[];
+
+  @ApiPropertyOptional({ example: true, description: 'Flag as a new arrival' })
+  @IsOptional()
+  @IsBoolean()
+  isNew?: boolean;
 }

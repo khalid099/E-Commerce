@@ -28,6 +28,7 @@ export function ProductsContent() {
   const search = searchParams.get('search') ?? '';
   const categoryId = searchParams.get('categoryId') ?? '';
   const sortBy = searchParams.get('sortBy') ?? 'featured';
+  const isNew = searchParams.get('isNew') === 'true';
   const maxPrice = Number(searchParams.get('maxPrice') ?? PRICE_MAX);
   const page = Math.max(1, Number(searchParams.get('page') ?? 1));
 
@@ -50,6 +51,7 @@ export function ProductsContent() {
     categoryId: categoryId || undefined,
     maxPrice: maxPrice < PRICE_MAX ? String(maxPrice) : undefined,
     sortBy: sortBy === 'featured' ? undefined : sortBy,
+    isNew: isNew ? 'true' : undefined,
     page: String(page),
     limit: String(PER_PAGE),
   });
@@ -70,8 +72,12 @@ export function ProductsContent() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <div className="text-[12.5px] font-semibold tracking-[2px] text-maison-clay">THE SHOP</div>
-          <h1 className="mt-2 font-serif text-[44px] sm:text-[52px]">All Products</h1>
+          <div className="text-[12.5px] font-semibold tracking-[2px] text-maison-clay">
+            {isNew ? 'JUST IN' : 'THE SHOP'}
+          </div>
+          <h1 className="mt-2 font-serif text-[44px] sm:text-[52px]">
+            {isNew ? 'New Arrivals' : 'All Products'}
+          </h1>
         </div>
         <div className="relative min-w-[280px] flex-1 sm:max-w-[320px] sm:flex-none">
           <Search className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-maison-faint" />
@@ -80,14 +86,14 @@ export function ProductsContent() {
             defaultValue={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search products..."
-            className="w-full rounded-full border border-maison-line-strong bg-white py-3.5 pl-11 pr-4 text-[14.5px] outline-none transition-colors focus:border-maison-clay"
+            className="w-full rounded-full border border-maison-line-strong bg-white py-3.5 pl-11 pr-4 text-[14.5px] outline-none transition-colors focus:border-maison-clay dark:bg-maison-panel"
           />
         </div>
       </div>
 
       <div className="mt-9 grid items-start gap-9 lg:grid-cols-[248px_1fr]">
         {/* Sidebar filters */}
-        <aside className="rounded-[18px] border border-maison-line bg-white p-6 lg:sticky lg:top-24">
+        <aside className="rounded-[18px] border border-maison-line bg-white p-6 dark:bg-maison-panel lg:sticky lg:top-24">
           <div className="mb-[18px] flex items-center justify-between">
             <span className="text-[15px] font-bold">Filters</span>
             <button
@@ -114,6 +120,17 @@ export function ProductsContent() {
               />
             ))}
           </div>
+
+          <div className="mb-3 text-xs font-bold tracking-[1px] text-maison-faint">AVAILABILITY</div>
+          <label className="mb-6 flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium text-maison-muted transition-colors hover:bg-[#FBF7F1] dark:hover:bg-maison-cream">
+            <input
+              type="checkbox"
+              checked={isNew}
+              onChange={(e) => setParams({ isNew: e.target.checked ? 'true' : undefined })}
+              className="h-4 w-4 cursor-pointer accent-maison-clay"
+            />
+            New arrivals only
+          </label>
 
           <div className="mb-2.5 text-xs font-bold tracking-[1px] text-maison-faint">MAX PRICE</div>
           <input
@@ -143,7 +160,7 @@ export function ProductsContent() {
                 value={sortBy}
                 onChange={(e) => setParams({ sortBy: e.target.value })}
                 aria-label="Sort products"
-                className="cursor-pointer appearance-none rounded-full border border-maison-line-strong bg-white py-2.5 pl-4 pr-9 text-[13.5px] font-semibold outline-none"
+                className="cursor-pointer appearance-none rounded-full border border-maison-line-strong bg-white py-2.5 pl-4 pr-9 text-[13.5px] font-semibold outline-none dark:bg-maison-panel"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -219,7 +236,9 @@ function CategoryRow({
       onClick={onClick}
       className={cn(
         'flex items-center justify-between rounded-[10px] px-3 py-2.5 text-left text-sm transition-colors',
-        active ? 'bg-[#FBEFE9] font-bold text-maison-clay' : 'font-medium text-maison-muted hover:bg-[#FBF7F1]',
+        active
+          ? 'bg-[#FBEFE9] font-bold text-maison-clay dark:bg-maison-cream'
+          : 'font-medium text-maison-muted hover:bg-[#FBF7F1] dark:hover:bg-maison-cream',
       )}
     >
       {label}
@@ -244,7 +263,7 @@ function Pagination({
       'flex h-10 min-w-[40px] items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors',
       active
         ? 'border-maison-ink bg-maison-ink text-maison-cream'
-        : 'border-maison-line-strong bg-white text-maison-ink hover:border-maison-ink disabled:opacity-40 disabled:hover:border-maison-line-strong',
+        : 'border-maison-line-strong bg-white text-maison-ink hover:border-maison-ink disabled:opacity-40 disabled:hover:border-maison-line-strong dark:bg-maison-panel',
     );
 
   return (
@@ -276,12 +295,12 @@ function EmptyState({
   onAction: () => void;
 }) {
   return (
-    <div className="rounded-[18px] border border-maison-line bg-white px-5 py-20 text-center">
+    <div className="rounded-[18px] border border-maison-line bg-white px-5 py-20 text-center dark:bg-maison-panel">
       <div className="mb-2 font-serif text-[30px]">{title}</div>
       <p className="mb-5 text-maison-subtle">{body}</p>
       <button
         onClick={onAction}
-        className="rounded-full bg-maison-ink px-6 py-3 font-semibold text-white transition-colors hover:bg-black"
+        className="rounded-full bg-maison-ink px-6 py-3 font-semibold text-maison-cream transition-colors hover:bg-maison-ink/90"
       >
         {actionLabel}
       </button>

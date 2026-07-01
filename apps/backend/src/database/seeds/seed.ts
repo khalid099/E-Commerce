@@ -20,6 +20,7 @@ import { Cart } from '../../cart/entities/cart.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 import { Order, OrderStatus } from '../../orders/entities/order.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
+import { Review } from '../../reviews/entities/review.entity';
 import type { ProductColor } from '@ecommerce/shared-types';
 
 loadEnv();
@@ -220,6 +221,47 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+/** Return a shuffled copy of an array using the supplied deterministic PRNG. */
+function shuffle<T>(items: T[], rng: () => number): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Skew toward positive ratings — the realistic shape of a curated catalogue. */
+function pickRating(rng: () => number): number {
+  const r = rng();
+  if (r < 0.55) return 5;
+  if (r < 0.85) return 4;
+  if (r < 0.96) return 3;
+  return 2;
+}
+
+/** Written-review copy keyed by star rating, sampled per seeded review. */
+const REVIEW_CONTENT: Record<number, Array<{ title: string; comment: string }>> = {
+  5: [
+    { title: 'Exceeded expectations', comment: 'The quality is outstanding and it looks even better in person. Worth every penny.' },
+    { title: 'A new favourite', comment: 'Beautifully made, arrived quickly and the finish is immaculate. Highly recommend.' },
+    { title: 'Perfect', comment: 'Exactly as described — the materials feel premium and it wears in gorgeously.' },
+    { title: 'Love it', comment: 'I get compliments every time. Timeless design and clearly built to last.' },
+  ],
+  4: [
+    { title: 'Really pleased', comment: 'Great craftsmanship and comfortable to use daily. Docked a star only on the price.' },
+    { title: 'Solid choice', comment: 'Looks lovely and feels durable. Sizing ran very slightly large for me.' },
+    { title: 'Very good', comment: 'Happy with the purchase overall — the colour is a touch different to the photos.' },
+  ],
+  3: [
+    { title: 'Decent', comment: 'Does the job and looks fine, but nothing about it feels special. Reasonable for the price.' },
+    { title: 'It’s okay', comment: 'Fine quality but the finish had a small flaw. Support was helpful though.' },
+  ],
+  2: [
+    { title: 'Underwhelmed', comment: 'Expected more at this price point. The materials feel lighter than they look online.' },
+  ],
+};
+
 /** Pick a realistic status given how long ago the order was placed. */
 function statusForAge(daysAgo: number, r: number): OrderStatus {
   if (daysAgo > 60) {
@@ -242,7 +284,7 @@ async function seed() {
     username: process.env.DB_USERNAME ?? 'postgres',
     password: process.env.DB_PASSWORD ?? 'postgres',
     database: process.env.DB_NAME ?? 'ecommerce_db',
-    entities: [User, Category, Product, Cart, CartItem, Order, OrderItem],
+    entities: [User, Category, Product, Cart, CartItem, Order, OrderItem, Review],
     synchronize: process.env.DB_SYNCHRONIZE === 'true',
   });
 
@@ -414,6 +456,72 @@ async function seed() {
         .execute();
     }
     console.log(`  ✓ ${ORDER_COUNT} orders`);
+  }
+
+  // Reviews — generated once. product.rating/reviewCount are a denormalized
+  // cache of these rows, so we recompute each product's aggregate from the
+  // reviews we insert (keeping the displayed stars in sync with real data).
+  // Verified reviewers are drawn from real order history first, so the
+  // "Verified purchase" badge reflects reality.
+  const reviewRepo = dataSource.getRepository(Review);
+  const existingReviews = await reviewRepo.count();
+  if (existingReviews > 0) {
+    console.log(`  ✓ reviews present (${existingReviews}) — skipped`);
+  } else {
+    const products = await productRepo.find();
+    const customers = await userRepo.find({ where: { role: UserRole.CUSTOMER } });
+
+    // productId -> set of userIds who bought it on a non-cancelled order.
+    const ordersWithItems = await orderRepo.find({ relations: ['items'] });
+    const buyersByProduct = new Map<string, Set<string>>();
+    for (const order of ordersWithItems) {
+      if (order.status === OrderStatus.CANCELLED) continue;
+      for (const item of order.items ?? []) {
+        if (!buyersByProduct.has(item.productId)) buyersByProduct.set(item.productId, new Set());
+        buyersByProduct.get(item.productId)!.add(order.userId);
+      }
+    }
+
+    const rng = mulberry32(918273);
+    const shortName = (u: User) => `${u.firstName}${u.lastName ? ` ${u.lastName.charAt(0)}.` : ''}`;
+
+    let total = 0;
+    for (const product of products) {
+      const buyerIds = buyersByProduct.get(product.id) ?? new Set<string>();
+      const buyers = customers.filter((u) => buyerIds.has(u.id));
+      const others = customers.filter((u) => !buyerIds.has(u.id));
+      // Verified buyers first (so their reviews sort to the top), then fill.
+      const ordered = [...shuffle(buyers, rng), ...shuffle(others, rng)];
+
+      const target = Math.min(ordered.length, 2 + Math.floor(rng() * 4)); // 2–5
+      const rows: Review[] = [];
+      for (const user of ordered.slice(0, target)) {
+        const rating = pickRating(rng);
+        const pool = REVIEW_CONTENT[rating];
+        const copy = pool[Math.floor(rng() * pool.length)];
+        rows.push(
+          reviewRepo.create({
+            userId: user.id,
+            productId: product.id,
+            rating,
+            title: copy.title,
+            comment: copy.comment,
+            authorName: shortName(user),
+            verifiedPurchase: buyerIds.has(user.id),
+          }),
+        );
+      }
+
+      if (rows.length === 0) continue;
+      await reviewRepo.save(rows);
+
+      const avg = rows.reduce((sum, r) => sum + r.rating, 0) / rows.length;
+      product.rating = Math.round(avg * 100) / 100;
+      product.reviewCount = rows.length;
+      await productRepo.save(product);
+      total += rows.length;
+    }
+    console.log(`  ✓ ${total} reviews`);
   }
 
   await dataSource.destroy();

@@ -54,8 +54,8 @@ export default function CartPage() {
       {isLoading && !cart ? (
         <CartSkeleton />
       ) : !hasItems ? (
-        <div className="rounded-[22px] border border-maison-line bg-white px-5 py-24 text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-clay">
+        <div className="rounded-[22px] border border-maison-line bg-white px-5 py-24 text-center dark:bg-maison-panel">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-clay dark:bg-maison-cream">
             <ShoppingCart className="h-7 w-7" />
           </div>
           <div className="mb-2 font-serif text-[30px]">Your cart is empty</div>
@@ -75,7 +75,7 @@ export default function CartPage() {
             ))}
           </div>
 
-          <aside className="rounded-[20px] border border-maison-line bg-white p-[26px] lg:sticky lg:top-24">
+          <aside className="rounded-[20px] border border-maison-line bg-white p-[26px] dark:bg-maison-panel lg:sticky lg:top-24">
             <div className="mb-[18px] text-lg font-bold">Order Summary</div>
 
             <div className="mb-2 flex gap-2">
@@ -87,14 +87,14 @@ export default function CartPage() {
               />
               <button
                 onClick={applyPromo}
-                className="rounded-[10px] bg-maison-ink px-[18px] text-[13.5px] font-semibold text-white"
+                className="rounded-[10px] bg-maison-ink px-[18px] text-[13.5px] font-semibold text-maison-cream"
               >
                 Apply
               </button>
             </div>
             <div className="mb-[18px] text-xs text-maison-subtle">
               Try{' '}
-              <span className="rounded bg-[#F4ECE0] px-[7px] py-0.5 font-bold tracking-[.5px] text-maison-clay-dark">
+              <span className="rounded bg-[#F4ECE0] px-[7px] py-0.5 font-bold tracking-[.5px] text-maison-clay-dark dark:bg-maison-cream">
                 {PROMO_CODE}
               </span>{' '}
               for 10% off
@@ -160,7 +160,7 @@ function CartLine({ item }: { item: CartItem }) {
   };
 
   return (
-    <div className="flex gap-[18px] rounded-[18px] border border-maison-line bg-white p-[18px]">
+    <div className="flex gap-[18px] rounded-[18px] border border-maison-line bg-white p-[18px] dark:bg-maison-panel">
       <Link href={`/products/${item.product.id}`} className="flex-shrink-0">
         <ProductTone
           name={item.product.name}
@@ -188,7 +188,7 @@ function CartLine({ item }: { item: CartItem }) {
                 {[item.selectedColor, item.selectedSize].filter(Boolean).map((v) => (
                   <span
                     key={v}
-                    className="rounded-full bg-[#F4ECE0] px-2.5 py-0.5 text-[11.5px] font-semibold text-maison-clay-dark"
+                    className="rounded-full bg-[#F4ECE0] px-2.5 py-0.5 text-[11.5px] font-semibold text-maison-clay-dark dark:bg-maison-cream"
                   >
                     {v}
                   </span>
@@ -208,7 +208,7 @@ function CartLine({ item }: { item: CartItem }) {
               onClick={() => change(item.quantity - 1)}
               disabled={busy || item.quantity <= 1}
               aria-label="Decrease quantity"
-              className="h-9 w-9 text-lg text-maison-muted transition-colors hover:bg-[#F4ECE0] disabled:opacity-40"
+              className="h-9 w-9 text-lg text-maison-muted transition-colors hover:bg-[#F4ECE0] disabled:opacity-40 dark:hover:bg-maison-cream"
             >
               &minus;
             </button>
@@ -219,7 +219,7 @@ function CartLine({ item }: { item: CartItem }) {
               onClick={() => change(item.quantity + 1)}
               disabled={busy || item.quantity >= item.product.stockQuantity}
               aria-label="Increase quantity"
-              className="h-9 w-9 text-lg text-maison-muted transition-colors hover:bg-[#F4ECE0] disabled:opacity-40"
+              className="h-9 w-9 text-lg text-maison-muted transition-colors hover:bg-[#F4ECE0] disabled:opacity-40 dark:hover:bg-maison-cream"
             >
               +
             </button>
@@ -261,7 +261,7 @@ function CartSkeleton() {
     <div className="grid items-start gap-8 lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="flex gap-[18px] rounded-[18px] border border-maison-line bg-white p-[18px]">
+          <div key={i} className="flex gap-[18px] rounded-[18px] border border-maison-line bg-white p-[18px] dark:bg-maison-panel">
             <Skeleton className="h-24 w-24 rounded-[14px]" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-3 w-1/4" />

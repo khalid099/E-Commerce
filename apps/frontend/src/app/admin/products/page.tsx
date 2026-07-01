@@ -97,7 +97,7 @@ export default function AdminProductsPage() {
     `cursor-pointer rounded-full border px-4 py-[9px] text-[13px] font-semibold transition-colors ${
       active
         ? 'border-maison-ink bg-maison-ink text-white'
-        : 'border-maison-line-strong bg-white text-maison-muted hover:border-maison-clay'
+        : 'border-maison-line-strong bg-white text-maison-muted hover:border-maison-clay dark:bg-maison-panel'
     }`;
 
   return (
@@ -111,7 +111,7 @@ export default function AdminProductsPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products…"
             aria-label="Search products"
-            className="w-full rounded-full border border-maison-line-strong bg-white py-[13px] pl-11 pr-4 text-[14.5px] outline-none transition-colors focus:border-maison-clay"
+            className="w-full rounded-full border border-maison-line-strong bg-white py-[13px] pl-11 pr-4 text-[14.5px] outline-none transition-colors focus:border-maison-clay dark:bg-maison-panel"
           />
         </div>
         <button
@@ -146,7 +146,7 @@ export default function AdminProductsPage() {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-maison-line bg-[#FBF7F1] text-[11.5px] font-bold tracking-[0.8px] text-[#9A9082]">
+              <tr className="border-b border-maison-line bg-[#FBF7F1] text-[11.5px] font-bold tracking-[0.8px] text-maison-subtle dark:bg-maison-panel">
                 <th scope="col" className="px-[26px] py-4 font-bold">PRODUCT</th>
                 <th scope="col" className="px-3 py-4 font-bold">CATEGORY</th>
                 <th scope="col" className="px-3 py-4 font-bold">PRICE</th>
@@ -158,7 +158,7 @@ export default function AdminProductsPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-b border-[#F2EDE4]">
+                  <tr key={i} className="border-b border-[#F2EDE4] dark:border-maison-line">
                     <td colSpan={6} className="px-[26px] py-4">
                       <div className="h-12 animate-pulse rounded-lg bg-maison-panel" />
                     </td>
@@ -175,7 +175,7 @@ export default function AdminProductsPage() {
                 products.map((p) => (
                   <tr
                     key={p.id}
-                    className={`border-b border-[#F2EDE4] last:border-0 ${p.isActive ? '' : 'opacity-60'}`}
+                    className={`border-b border-[#F2EDE4] last:border-0 dark:border-maison-line ${p.isActive ? '' : 'opacity-60'}`}
                   >
                     <td className="px-[26px] py-3.5">
                       <div className="flex items-center gap-3.5">
@@ -210,7 +210,7 @@ export default function AdminProductsPage() {
                           type="button"
                           onClick={() => openEdit(p)}
                           aria-label={`Edit ${p.name}`}
-                          className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-maison-line-strong bg-white text-maison-muted transition-colors hover:border-maison-clay hover:text-maison-clay"
+                          className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-maison-line-strong bg-white text-maison-muted transition-colors hover:border-maison-clay hover:text-maison-clay dark:bg-maison-panel"
                         >
                           <Pencil className="h-[15px] w-[15px]" />
                         </button>
@@ -218,7 +218,7 @@ export default function AdminProductsPage() {
                           type="button"
                           onClick={() => setDeleting(p)}
                           aria-label={`Delete ${p.name}`}
-                          className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-maison-line-strong bg-white text-maison-muted transition-colors hover:border-[#B23B3B] hover:bg-[#F6E1E1] hover:text-[#B23B3B]"
+                          className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-maison-line-strong bg-white text-maison-muted transition-colors hover:border-[#B23B3B] hover:bg-[#F6E1E1] hover:text-[#B23B3B] dark:bg-maison-panel"
                         >
                           <Trash2 className="h-[15px] w-[15px]" />
                         </button>
@@ -241,7 +241,7 @@ export default function AdminProductsPage() {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
+              className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40 dark:bg-maison-panel"
             >
               Previous
             </button>
@@ -252,7 +252,7 @@ export default function AdminProductsPage() {
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
+              className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40 dark:bg-maison-panel"
             >
               Next
             </button>
@@ -278,7 +278,7 @@ export default function AdminProductsPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Delete product"
-            className="w-full max-w-[420px] animate-modal-in rounded-[22px] bg-white p-[30px] text-center shadow-[0_40px_90px_rgba(33,28,22,0.32)]"
+            className="w-full max-w-[420px] animate-modal-in rounded-[22px] bg-white p-[30px] text-center shadow-[0_40px_90px_rgba(33,28,22,0.32)] dark:bg-maison-panel"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mb-[18px] flex h-14 w-14 items-center justify-center rounded-full bg-[#F6E1E1] text-[#B23B3B]">
@@ -294,7 +294,7 @@ export default function AdminProductsPage() {
                 type="button"
                 onClick={() => setDeleting(null)}
                 disabled={deleteBusy}
-                className="flex-1 rounded-full border border-maison-stone bg-white py-[13px] text-[14.5px] font-semibold text-maison-ink transition-colors hover:bg-[#F4ECE0] disabled:opacity-60"
+                className="flex-1 rounded-full border border-maison-stone bg-white py-[13px] text-[14.5px] font-semibold text-maison-ink transition-colors hover:bg-[#F4ECE0] disabled:opacity-60 dark:bg-maison-panel dark:hover:bg-maison-line"
               >
                 Keep it
               </button>

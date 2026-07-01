@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { ProductTone } from '@/components/storefront/ProductTone';
 import { StatusBadge } from '@/components/storefront/StatusBadge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -55,7 +55,7 @@ export default function OrderDetailPage() {
         <p className="mb-6 text-maison-subtle">
           This order doesn&apos;t exist or you don&apos;t have access to it.
         </p>
-        <Link href="/orders" className="inline-block rounded-full bg-maison-ink px-6 py-3 font-semibold text-white">
+        <Link href="/orders" className="inline-block rounded-full bg-maison-ink px-6 py-3 font-semibold text-maison-cream">
           Back to orders
         </Link>
       </main>
@@ -65,6 +65,9 @@ export default function OrderDetailPage() {
   const addr = order.shippingAddress;
   const currentIdx = STEPS.indexOf(order.status);
   const cancelled = order.status === OrderStatus.CANCELLED;
+  // Delivered is terminal: the whole flow is complete, so no node is "in progress" —
+  // the final step reads as a tick, not a highlighted step number.
+  const complete = order.status === OrderStatus.DELIVERED;
 
   return (
     <main className="mx-auto max-w-[880px] animate-page-in px-5 pb-12 pt-11 sm:px-8">
@@ -89,32 +92,38 @@ export default function OrderDetailPage() {
       </p>
 
       {/* Status tracker */}
-      <div className="mb-7 rounded-[18px] border border-maison-line bg-white p-6">
+      <div className="mb-7 rounded-[20px] border border-maison-line bg-white p-7 shadow-[0_1px_2px_rgba(120,90,60,.04)] dark:bg-maison-panel">
         {cancelled ? (
-          <div className="rounded-lg bg-[#F6E8E4] px-4 py-3 text-sm font-medium text-maison-clay-dark">
+          <div className="rounded-xl bg-[#F6E8E4] px-4 py-3.5 text-sm font-medium text-maison-clay-dark">
             This order has been cancelled.
           </div>
         ) : (
-          <div className="flex items-center">
+          <div className="flex items-start">
             {STEPS.map((step, idx) => {
               const done = idx <= currentIdx;
+              const current = idx === currentIdx && !complete;
               return (
-                <div key={step} className="flex flex-1 items-center last:flex-none">
-                  <div className="flex flex-col items-center gap-1.5">
+                <div key={step} className="flex flex-1 items-start last:flex-none">
+                  <div className="flex flex-col items-center gap-2">
                     <div
                       className={cn(
-                        'flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
-                        done ? 'bg-maison-clay text-white' : 'bg-[#EFE7DA] text-maison-faint',
+                        'flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold transition-colors',
+                        done ? 'bg-maison-clay text-white' : 'bg-[#EFE7DA] text-maison-faint dark:bg-maison-line',
+                        current && 'ring-4 ring-maison-clay/15',
                       )}
                     >
-                      {idx + 1}
+                      {done && !current ? <Check className="h-[18px] w-[18px]" /> : idx + 1}
                     </div>
-                    <span className={cn('text-[10.5px] font-semibold', done ? 'text-maison-clay' : 'text-maison-faint')}>
+                    <span className={cn('text-[11px] font-semibold', done ? 'text-maison-clay' : 'text-maison-faint')}>
                       {step.charAt(0) + step.slice(1).toLowerCase()}
                     </span>
                   </div>
                   {idx < STEPS.length - 1 && (
-                    <div className={cn('mx-1 mb-4 h-0.5 flex-1', idx < currentIdx ? 'bg-maison-clay' : 'bg-[#EFE7DA]')} />
+                    <div className="mx-1.5 mt-[17px] h-[3px] flex-1 overflow-hidden rounded-full bg-[#EFE7DA] dark:bg-maison-line">
+                      <div
+                        className={cn('h-full rounded-full bg-maison-clay transition-all duration-500', idx < currentIdx ? 'w-full' : 'w-0')}
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -123,25 +132,33 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid items-start gap-6 lg:grid-cols-3">
         {/* Items */}
         <div className="lg:col-span-2">
-          <div className="overflow-hidden rounded-[18px] border border-maison-line bg-white">
+          <div className="overflow-hidden rounded-[20px] border border-maison-line bg-white shadow-[0_1px_2px_rgba(120,90,60,.04)] dark:bg-maison-panel">
+            <div className="border-b border-maison-line bg-gradient-to-b from-maison-panel to-white dark:to-maison-panel px-6 py-3.5 text-[11px] font-bold uppercase tracking-[1px] text-maison-faint">
+              Items · {order.items.length}
+            </div>
             {order.items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3.5 border-b border-maison-line p-4 last:border-b-0">
-                <ProductTone name={item.productName} initialClassName="text-[24px]" className="h-12 w-12 flex-shrink-0 rounded-[10px]" />
+              <div key={item.id} className="flex items-center gap-4 border-b border-maison-line/70 px-6 py-4 last:border-b-0">
+                <ProductTone
+                  name={item.productName}
+                  imageUrl={item.productImageUrl}
+                  initialClassName="text-[26px]"
+                  className="h-16 w-16 flex-shrink-0 rounded-[13px] ring-1 ring-maison-line"
+                />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{item.productName}</p>
+                  <p className="truncate text-[15px] font-semibold">{item.productName}</p>
                   {(item.selectedColor || item.selectedSize) && (
-                    <p className="text-xs text-maison-clay-dark">
+                    <p className="mt-0.5 text-xs font-medium text-maison-clay-dark">
                       {[item.selectedColor, item.selectedSize].filter(Boolean).join(' · ')}
                     </p>
                   )}
-                  <p className="text-xs text-maison-subtle">
+                  <p className="mt-0.5 text-xs text-maison-subtle">
                     {money(item.unitPrice)} × {item.quantity}
                   </p>
                 </div>
-                <span className="text-sm font-semibold">{money(item.lineTotal)}</span>
+                <span className="text-[15px] font-semibold tabular-nums">{money(item.lineTotal)}</span>
               </div>
             ))}
           </div>
@@ -149,25 +166,33 @@ export default function OrderDetailPage() {
 
         {/* Summary + address */}
         <div className="space-y-5">
-          <div className="rounded-[18px] border border-maison-line bg-white p-5">
-            <div className="mb-3.5 text-xs font-bold tracking-[1px] text-maison-faint">SUMMARY</div>
-            <div className="space-y-2 text-sm text-maison-muted">
-              <div className="flex justify-between"><span>Subtotal</span><span>{money(order.subtotal)}</span></div>
-              <div className="flex justify-between"><span>Tax</span><span>{money(order.tax)}</span></div>
-              <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>{order.shippingCost === 0 ? 'Free' : money(order.shippingCost)}</span>
-              </div>
+          <div className="overflow-hidden rounded-[20px] border border-maison-line bg-white shadow-[0_1px_2px_rgba(120,90,60,.04)] dark:bg-maison-panel">
+            <div className="border-b border-maison-line bg-gradient-to-b from-maison-panel to-white dark:to-maison-panel px-5 py-3.5 text-[11px] font-bold uppercase tracking-[1px] text-maison-faint">
+              Summary
             </div>
-            <div className="mt-3 flex justify-between border-t border-maison-line pt-3 font-bold">
-              <span>Total</span>
-              <span>{money(order.total)}</span>
+            <div className="p-5">
+              <div className="space-y-2.5 text-sm text-maison-muted">
+                <div className="flex justify-between"><span>Subtotal</span><span className="tabular-nums text-maison-ink">{money(order.subtotal)}</span></div>
+                <div className="flex justify-between"><span>Tax</span><span className="tabular-nums text-maison-ink">{money(order.tax)}</span></div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span className={cn('tabular-nums', order.shippingCost === 0 ? 'font-semibold text-maison-clay' : 'text-maison-ink')}>
+                    {order.shippingCost === 0 ? 'Free' : money(order.shippingCost)}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-baseline justify-between border-t border-maison-line pt-4">
+                <span className="font-bold">Total</span>
+                <span className="font-serif text-[22px] text-maison-clay tabular-nums">{money(order.total)}</span>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-[18px] border border-maison-line bg-white p-5">
-            <div className="mb-3 text-xs font-bold tracking-[1px] text-maison-faint">SHIPPING ADDRESS</div>
-            <address className="space-y-0.5 text-sm not-italic text-maison-ink">
+          <div className="overflow-hidden rounded-[20px] border border-maison-line bg-white shadow-[0_1px_2px_rgba(120,90,60,.04)] dark:bg-maison-panel">
+            <div className="border-b border-maison-line bg-gradient-to-b from-maison-panel to-white dark:to-maison-panel px-5 py-3.5 text-[11px] font-bold uppercase tracking-[1px] text-maison-faint">
+              Shipping Address
+            </div>
+            <address className="space-y-0.5 p-5 text-sm not-italic leading-relaxed text-maison-ink">
               <p className="font-semibold">{addr.fullName}</p>
               <p>{addr.line1}</p>
               {addr.line2 && <p>{addr.line2}</p>}

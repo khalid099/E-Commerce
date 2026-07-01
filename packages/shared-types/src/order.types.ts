@@ -21,6 +21,8 @@ export interface OrderItem {
   orderId: string;
   productId: string;
   productName: string;
+  /** Snapshot of the product image at order time; null when the product had none. */
+  productImageUrl: string | null;
   unitPrice: number;
   quantity: number;
   /** Snapshot of the colour chosen at order time; null when none. */

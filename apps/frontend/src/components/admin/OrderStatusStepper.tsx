@@ -16,8 +16,10 @@ export function OrderStatusStepper({ status }: { status: OrderStatus }) {
           <div key={step} className="relative flex flex-1 flex-col items-center">
             {i > 0 && (
               <div
-                className="absolute top-[15px] left-[-50%] right-[50%] h-[3px]"
-                style={{ background: done ? '#C75B39' : '#EBE3D7' }}
+                className={cn(
+                  'absolute top-[15px] left-[-50%] right-[50%] h-[3px]',
+                  done ? 'bg-maison-clay' : 'bg-maison-line-strong',
+                )}
               />
             )}
             <div
@@ -25,7 +27,7 @@ export function OrderStatusStepper({ status }: { status: OrderStatus }) {
                 'relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-[13px] font-bold',
                 done
                   ? 'border-maison-clay bg-maison-clay text-white'
-                  : 'border-maison-line-strong bg-white text-maison-faint',
+                  : 'border-maison-line-strong bg-white text-maison-faint dark:bg-maison-panel',
               )}
             >
               {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : i + 1}

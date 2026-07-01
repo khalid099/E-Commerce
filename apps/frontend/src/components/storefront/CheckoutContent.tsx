@@ -80,13 +80,18 @@ export function CheckoutContent() {
 
   return (
     <main className="mx-auto max-w-[1080px] animate-page-in px-5 pb-12 pt-9 sm:px-8">
-      <div className="overflow-hidden rounded-[18px] border border-[#E6E0D6] shadow-[0_30px_70px_rgba(33,28,22,.16)]">
+      {/* This card mimics a literal browser window around the Stripe checkout
+          iframe (traffic-light dots, URL bar). Stripe's own PaymentElement is
+          fixed to the light `stripe` appearance below, so the whole mock-browser
+          card is intentionally pinned light in both themes rather than partially
+          inverting around content that can't itself go dark. */}
+      <div className="overflow-hidden rounded-[18px] border border-[#E6E0D6] text-[#2C2620] shadow-[0_30px_70px_rgba(33,28,22,.16)]">
         {/* Browser chrome */}
         <div className="flex items-center gap-2 border-b border-[#E6E0D6] bg-[#F2EEE8] px-[18px] py-[11px]">
           <span className="h-[11px] w-[11px] rounded-full bg-[#E8736A]" />
           <span className="h-[11px] w-[11px] rounded-full bg-[#F0BE4F]" />
           <span className="h-[11px] w-[11px] rounded-full bg-[#69C16B]" />
-          <div className="flex flex-1 items-center justify-center gap-1.5 text-[12.5px] text-maison-subtle">
+          <div className="flex flex-1 items-center justify-center gap-1.5 text-[12.5px] text-[#6C6358]">
             <Lock className="h-3 w-3" />
             checkout.stripe.com
           </div>
@@ -99,20 +104,20 @@ export function CheckoutContent() {
               <button
                 onClick={() => router.push('/cart')}
                 aria-label="Back to cart"
-                className="text-maison-subtle"
+                className="text-[#6C6358]"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-maison-ink font-serif text-base text-white">
-                M
+              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#211C16] font-serif text-[11px] font-semibold text-white">
+                KD
               </span>
-              <span className="text-sm font-semibold">Maison</span>
+              <span className="text-sm font-semibold">KD Store</span>
               <span className="rounded bg-[#FCEED2] px-2 py-[3px] text-[10.5px] font-bold tracking-[.6px] text-[#9A6B1A]">
                 TEST MODE
               </span>
             </div>
 
-            <div className="text-sm text-maison-subtle">Pay Maison</div>
+            <div className="text-sm text-[#6C6358]">Pay KD Store</div>
             <div className="mb-7 mt-1 text-[38px] font-bold">{money(total)}</div>
 
             <div className="flex flex-col gap-4">
@@ -127,7 +132,7 @@ export function CheckoutContent() {
                   />
                   <div className="flex-1">
                     <div className="text-[13.5px] font-semibold">{item.product.name}</div>
-                    <div className="text-xs text-maison-subtle">Qty {item.quantity}</div>
+                    <div className="text-xs text-[#6C6358]">Qty {item.quantity}</div>
                   </div>
                   <div className="text-[13.5px] font-semibold">{money(item.lineTotal)}</div>
                 </div>
@@ -151,7 +156,7 @@ export function CheckoutContent() {
               <div className="flex flex-col items-center gap-3 rounded-xl border border-[#F0D9D3] bg-[#FBF1EE] px-5 py-10 text-center">
                 <AlertCircle className="h-7 w-7 text-maison-clay" />
                 <div className="text-sm font-semibold text-maison-clay-dark">{intentError}</div>
-                <p className="text-[12.5px] text-maison-subtle">
+                <p className="text-[12.5px] text-[#6C6358]">
                   Make sure Stripe test keys are configured, then try again.
                 </p>
                 <button
@@ -159,7 +164,7 @@ export function CheckoutContent() {
                     setIntentError('');
                     setIntent(null);
                   }}
-                  className="mt-1 rounded-full bg-maison-ink px-5 py-2.5 text-[13px] font-semibold text-white"
+                  className="mt-1 rounded-full bg-[#211C16] px-5 py-2.5 text-[13px] font-semibold text-white"
                 >
                   Retry
                 </button>
@@ -317,7 +322,7 @@ function CheckoutForm({ paymentIntentId, total }: { paymentIntentId: string; tot
       >
         {paying ? 'Processing…' : `Pay ${money(total)}`}
       </button>
-      <div className="mt-3.5 text-center text-[11.5px] text-maison-subtle">
+      <div className="mt-3.5 text-center text-[11.5px] text-[#6C6358]">
         Powered by <span className="font-bold text-[#635BFF]">stripe</span> &nbsp;·&nbsp; Test mode —
         use card <span className="font-semibold">4242 4242 4242 4242</span>.
       </div>

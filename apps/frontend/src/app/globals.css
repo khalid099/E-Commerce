@@ -24,6 +24,60 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* ── Maison palette — light (space-separated RGB channels) ── */
+    --m-cream: 250 246 240;
+    --m-panel: 251 247 241;
+    --m-ink: 33 28 22;
+    --m-clay: 199 91 57;
+    --m-clay-dark: 168 73 44;
+    --m-line: 235 227 215;
+    --m-line-strong: 227 218 203;
+    --m-stone: 216 205 190;
+    --m-muted: 92 83 71;
+    --m-subtle: 138 128 115;
+    --m-faint: 168 156 139;
+    --m-leaf: 63 122 82;
+    --m-leaf-soft: 234 243 234;
+  }
+
+  .dark {
+    --background: 24 18% 8%;
+    --foreground: 40 25% 90%;
+    --card: 26 16% 11%;
+    --card-foreground: 40 25% 90%;
+    --popover: 26 16% 11%;
+    --popover-foreground: 40 25% 90%;
+    --primary: 40 25% 90%;
+    --primary-foreground: 24 18% 8%;
+    --secondary: 30 12% 16%;
+    --secondary-foreground: 40 25% 90%;
+    --muted: 30 12% 16%;
+    --muted-foreground: 36 12% 65%;
+    --accent: 30 12% 18%;
+    --accent-foreground: 40 25% 90%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 40 25% 90%;
+    --border: 32 14% 18%;
+    --input: 32 14% 18%;
+    --ring: 18 55% 55%;
+
+    /* ── Maison palette — warm charcoal dark ──
+       `ink` and `cream` intentionally swap roles so `bg-ink text-cream`
+       chips (avatar, active pill) invert to high-contrast light-on-dark. */
+    --m-cream: 24 20 16;
+    --m-panel: 32 27 21;
+    --m-ink: 240 233 222;
+    --m-clay: 217 116 82;
+    --m-clay-dark: 226 138 100;
+    --m-line: 46 40 32;
+    --m-line-strong: 58 50 40;
+    --m-stone: 74 66 53;
+    --m-muted: 184 173 156;
+    --m-subtle: 154 143 127;
+    --m-faint: 122 112 98;
+    --m-leaf: 110 176 130;
+    --m-leaf-soft: 30 42 32;
   }
 }
 
@@ -39,20 +93,20 @@
 /* ── Maison storefront chrome ──
    Scoped scrollbar + form resets used by the cream-themed storefront. */
 .maison {
-  background: #faf6f0;
+  background: rgb(var(--m-cream));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 .maison input::placeholder,
 .maison textarea::placeholder {
-  color: #b6ac9f;
+  color: rgb(var(--m-faint));
 }
 .maison ::-webkit-scrollbar {
   width: 11px;
   height: 11px;
 }
 .maison ::-webkit-scrollbar-thumb {
-  background: #d8cdbe;
+  background: rgb(var(--m-stone));
   border-radius: 8px;
-  border: 3px solid #faf6f0;
+  border: 3px solid rgb(var(--m-cream));
 }

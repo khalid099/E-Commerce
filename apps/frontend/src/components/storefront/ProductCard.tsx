@@ -14,7 +14,7 @@ import type { Product } from '@ecommerce/shared-types';
 
 interface ProductCardProps {
   product: Product;
-  /** Show the "NEW" badge (catalog/new-arrivals contexts). */
+  /** Force the "NEW" badge on. By default it follows the product's own isNew flag. */
   isNew?: boolean;
   /** Show the star rating beside the price. Catalog only; not on the API model. */
   showRating?: boolean;
@@ -37,6 +37,8 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
 
   const compareAt = product.compareAtPrice != null ? Number(product.compareAtPrice) : null;
   const onSale = compareAt != null && compareAt > Number(product.price);
+  // Sale takes visual priority; a sale item never also reads as NEW.
+  const showNew = !onSale && (isNew || product.isNew);
 
   const handleWish = (e: React.MouseEvent) => {
     stop(e);
@@ -95,7 +97,7 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
             wishlisted ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`
           }
           aria-pressed={wishlisted}
-          className="absolute right-3 top-3 z-[2] flex h-9 w-9 items-center justify-center rounded-full bg-white/85 shadow-[0_4px_12px_rgba(0,0,0,.12)] backdrop-blur-[6px] transition-all duration-200 hover:scale-110 disabled:opacity-60"
+          className="absolute right-3 top-3 z-[2] flex h-9 w-9 items-center justify-center rounded-full bg-white/85 shadow-[0_4px_12px_rgba(0,0,0,.12)] backdrop-blur-[6px] transition-all duration-200 hover:scale-110 disabled:opacity-60 dark:bg-maison-panel/85 dark:shadow-[0_4px_12px_rgba(0,0,0,.5)] dark:ring-1 dark:ring-white/10"
         >
           <Heart
             className={cn(
@@ -110,8 +112,8 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
             Sale
           </div>
         ) : (
-          isNew && (
-            <div className="absolute left-3 top-3 rounded-full bg-maison-ink px-2.5 py-[5px] text-[11px] font-semibold tracking-[.5px] text-maison-cream">
+          showNew && (
+            <div className="absolute left-3 top-3 rounded-full bg-maison-ink px-2.5 py-[5px] text-[11px] font-semibold tracking-[.5px] text-maison-cream dark:bg-maison-panel dark:text-maison-ink">
               NEW
             </div>
           )
@@ -162,7 +164,7 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
             onClick={handleAdd}
             disabled={isAdding}
             aria-label={`Add ${product.name} to cart`}
-            className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-maison-ink shadow-[0_4px_14px_rgba(0,0,0,.12)] backdrop-blur-[6px] transition-all duration-200 hover:scale-110 hover:bg-maison-clay hover:text-white disabled:opacity-60"
+            className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-maison-ink shadow-[0_4px_14px_rgba(0,0,0,.12)] backdrop-blur-[6px] transition-all duration-200 hover:scale-110 hover:bg-maison-clay hover:text-white disabled:opacity-60 dark:bg-maison-panel/90 dark:shadow-[0_4px_14px_rgba(0,0,0,.5)] dark:ring-1 dark:ring-white/10 dark:hover:bg-maison-clay dark:hover:text-white"
           >
             <Plus className="h-5 w-5" strokeWidth={2} />
           </button>
@@ -174,12 +176,12 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
       </div>
       <div className="mt-1 text-base font-semibold leading-[1.3] text-maison-ink">{product.name}</div>
       <div className="mt-1.5 flex items-center gap-2">
-        <span className="text-[15px] font-semibold text-[#3A342C]">{money(product.price)}</span>
+        <span className="text-[15px] font-semibold text-maison-ink">{money(product.price)}</span>
         {onSale && (
           <span className="text-[13px] text-maison-faint line-through">{money(compareAt)}</span>
         )}
         {showRating && product.rating != null && (
-          <span className="ml-auto text-xs text-[#B0A595]">{stars(Number(product.rating))}</span>
+          <span className="ml-auto text-xs text-maison-faint">{stars(Number(product.rating))}</span>
         )}
       </div>
     </Link>

@@ -8,6 +8,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { AuthSubmit } from '@/components/auth/AuthSubmit';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
@@ -79,16 +80,16 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      headline="Join the Maison list."
+      headline="Join the KD Store list."
       sub="Create an account to save your cart, track orders and get early access to drops."
     >
       <h1 className="mb-1.5 font-serif text-[36px]">Create account</h1>
       <p className="mb-7 text-[14.5px] text-maison-subtle">
-        Join Maison to save your cart and track orders.
+        Join KD Store to save your cart and track orders.
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col" noValidate>
-        <label htmlFor="fullName" className="mb-1.5 text-[12.5px] font-semibold text-[#6C6358]">
+        <label htmlFor="fullName" className="mb-1.5 text-[12.5px] font-semibold text-maison-muted">
           Full name
         </label>
         <input
@@ -103,7 +104,7 @@ export default function RegisterPage() {
           <p className="mt-1.5 text-[12.5px] text-maison-clay">{errors.fullName.message}</p>
         )}
 
-        <label htmlFor="email" className="mb-1.5 mt-4 text-[12.5px] font-semibold text-[#6C6358]">
+        <label htmlFor="email" className="mb-1.5 mt-4 text-[12.5px] font-semibold text-maison-muted">
           Email
         </label>
         <input
@@ -138,8 +139,8 @@ export default function RegisterPage() {
             >
               <span
                 className={cn(
-                  'flex h-[14px] w-[14px] flex-shrink-0 items-center justify-center rounded-full',
-                  rule.met ? 'bg-maison-leaf text-white' : 'border border-maison-line-strong',
+                  'flex h-[14px] w-[14px] flex-shrink-0 items-center justify-center rounded-full transition-colors',
+                  rule.met ? 'animate-pop bg-maison-leaf text-white' : 'border border-maison-line-strong',
                 )}
               >
                 {rule.met && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
@@ -163,13 +164,12 @@ export default function RegisterPage() {
           <p className="mt-2.5 text-[12.5px] font-medium text-maison-clay">{serverError}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-[22px] h-[52px] rounded-full bg-maison-clay text-[15.5px] font-semibold text-white shadow-[0_12px_28px_rgba(199,91,57,.3)] transition-transform hover:-translate-y-0.5 disabled:opacity-60"
-        >
-          {isSubmitting ? 'Creating account…' : 'Create account'}
-        </button>
+        <AuthSubmit
+          label="Create account"
+          pendingLabel="Creating account…"
+          pending={isSubmitting}
+          className="mt-[22px]"
+        />
       </form>
 
       <div className="mt-5 text-center text-sm text-maison-subtle">
@@ -184,7 +184,9 @@ export default function RegisterPage() {
 
 function fieldCls(error: boolean) {
   return cn(
-    'w-full rounded-xl border px-4 py-3.5 text-[14.5px] outline-none transition-colors',
-    error ? 'border-maison-clay' : 'border-maison-line-strong focus:border-maison-clay',
+    'w-full rounded-xl border bg-[#FCFAF6] px-4 py-3.5 text-[14.5px] text-maison-ink outline-none transition-all duration-200 placeholder:text-maison-faint focus:bg-white focus:ring-4 dark:bg-maison-cream dark:focus:bg-maison-cream',
+    error
+      ? 'border-maison-clay ring-4 ring-maison-clay/10'
+      : 'border-maison-line-strong focus:border-maison-clay focus:ring-maison-clay/[.09]',
   );
 }

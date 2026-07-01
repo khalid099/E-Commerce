@@ -33,7 +33,7 @@ export function PasswordField({
 
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-[12.5px] font-semibold text-[#6C6358]">
+      <label htmlFor={id} className="mb-1.5 block text-[12.5px] font-semibold text-maison-muted">
         {label}
       </label>
       <div className="relative">
@@ -45,8 +45,10 @@ export function PasswordField({
           aria-invalid={!!error}
           {...registration}
           className={cn(
-            'w-full rounded-xl border px-4 py-3.5 pr-11 text-[14.5px] outline-none transition-colors',
-            error ? 'border-maison-clay' : 'border-maison-line-strong focus:border-maison-clay',
+            'w-full rounded-xl border bg-[#FCFAF6] px-4 py-3.5 pr-11 text-[14.5px] text-maison-ink outline-none transition-all duration-200 placeholder:text-maison-faint focus:bg-white focus:ring-4 dark:bg-maison-cream dark:focus:bg-maison-cream',
+            error
+              ? 'border-maison-clay ring-4 ring-maison-clay/10'
+              : 'border-maison-line-strong focus:border-maison-clay focus:ring-maison-clay/[.09]',
           )}
         />
         <button

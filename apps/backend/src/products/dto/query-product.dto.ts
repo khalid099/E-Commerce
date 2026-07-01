@@ -3,12 +3,13 @@ import {
   IsString,
   IsNumber,
   IsPositive,
+  IsBoolean,
   Min,
   Max,
   IsEnum,
   IsUUID,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum SortBy {
@@ -46,6 +47,12 @@ export class QueryProductDto {
   @IsOptional()
   @IsEnum(SortBy)
   sortBy?: SortBy = SortBy.NEWEST;
+
+  @ApiPropertyOptional({ description: 'Restrict to new arrivals only' })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  isNew?: boolean;
 
   @ApiPropertyOptional({ minimum: 1, default: 1 })
   @IsOptional()

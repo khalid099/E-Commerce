@@ -52,12 +52,12 @@ export default function AdminDashboardPage() {
       <div className="space-y-5">
         <div className="grid grid-cols-4 gap-5">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-[140px] animate-pulse rounded-[18px] border border-maison-line bg-white" />
+            <div key={i} className="h-[140px] animate-pulse rounded-[18px] border border-maison-line bg-white dark:bg-maison-panel" />
           ))}
         </div>
         <div className="grid grid-cols-[1.55fr_1fr] gap-5">
-          <div className="h-[320px] animate-pulse rounded-[18px] border border-maison-line bg-white" />
-          <div className="h-[320px] animate-pulse rounded-[18px] border border-maison-line bg-white" />
+          <div className="h-[320px] animate-pulse rounded-[18px] border border-maison-line bg-white dark:bg-maison-panel" />
+          <div className="h-[320px] animate-pulse rounded-[18px] border border-maison-line bg-white dark:bg-maison-panel" />
         </div>
       </div>
     );
@@ -133,7 +133,7 @@ export default function AdminDashboardPage() {
             stats.topProducts.map((p, i) => (
               <div
                 key={p.productId}
-                className="flex items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] last:border-0"
+                className="flex items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] dark:border-maison-line last:border-0"
               >
                 <span className="w-[22px] font-serif text-[20px] text-maison-clay">{i + 1}</span>
                 <ProductTone
@@ -175,7 +175,7 @@ export default function AdminDashboardPage() {
                 key={o.id}
                 type="button"
                 onClick={() => router.push(`/admin/orders?order=${o.id}`)}
-                className="flex w-full items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] text-left transition-opacity last:border-0 hover:opacity-70"
+                className="flex w-full items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] dark:border-maison-line text-left transition-opacity last:border-0 hover:opacity-70"
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-maison-ink">#{shortId(o.id)}</div>

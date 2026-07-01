@@ -7,6 +7,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { AuthSubmit } from '@/components/auth/AuthSubmit';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
@@ -60,7 +61,7 @@ export default function LoginPage() {
       <h1 className="mb-1.5 font-serif text-[36px]">Welcome back</h1>
       <p className="mb-5 text-[14.5px] text-maison-subtle">Sign in to access your cart and orders.</p>
 
-      <div className="mb-6 rounded-xl border border-dashed border-maison-line-strong bg-[#F7F1E8] px-4 py-3">
+      <div className="mb-6 rounded-xl border border-dashed border-maison-line-strong bg-[#F7F1E8] px-4 py-3 dark:bg-maison-panel">
         <div className="mb-2 text-[11.5px] font-bold uppercase tracking-[.6px] text-maison-clay-dark">
           Demo accounts — tap to fill
         </div>
@@ -68,14 +69,14 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => fillDemo('customer@ecommerce.com', 'Customer@123456')}
-            className="flex-1 rounded-lg border border-maison-line-strong bg-white px-3 py-2 text-[12.5px] font-semibold text-maison-ink transition-colors hover:border-maison-clay hover:text-maison-clay"
+            className="flex-1 rounded-lg border border-maison-line-strong bg-white px-3 py-2 text-[12.5px] font-semibold text-maison-ink transition-all duration-200 hover:-translate-y-px hover:border-maison-clay hover:text-maison-clay hover:shadow-[0_6px_16px_rgba(199,91,57,.12)] dark:bg-maison-cream"
           >
             Customer
           </button>
           <button
             type="button"
             onClick={() => fillDemo('admin@ecommerce.com', 'Admin@123456')}
-            className="flex-1 rounded-lg border border-maison-line-strong bg-white px-3 py-2 text-[12.5px] font-semibold text-maison-ink transition-colors hover:border-maison-clay hover:text-maison-clay"
+            className="flex-1 rounded-lg border border-maison-line-strong bg-white px-3 py-2 text-[12.5px] font-semibold text-maison-ink transition-all duration-200 hover:-translate-y-px hover:border-maison-clay hover:text-maison-clay hover:shadow-[0_6px_16px_rgba(199,91,57,.12)] dark:bg-maison-cream"
           >
             Admin
           </button>
@@ -86,7 +87,7 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col" noValidate>
-        <label htmlFor="email" className="mb-1.5 text-[12.5px] font-semibold text-[#6C6358]">
+        <label htmlFor="email" className="mb-1.5 text-[12.5px] font-semibold text-maison-muted">
           Email
         </label>
         <input
@@ -114,13 +115,7 @@ export default function LoginPage() {
           <p className="mt-2.5 text-[12.5px] font-medium text-maison-clay">{serverError}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-[22px] h-[52px] rounded-full bg-maison-clay text-[15.5px] font-semibold text-white shadow-[0_12px_28px_rgba(199,91,57,.3)] transition-transform hover:-translate-y-0.5 disabled:opacity-60"
-        >
-          {isSubmitting ? 'Signing in…' : 'Sign in'}
-        </button>
+        <AuthSubmit label="Sign in" pendingLabel="Signing in…" pending={isSubmitting} className="mt-[22px]" />
       </form>
 
       <div className="my-5 flex items-center gap-3 text-[12px] text-maison-faint">
@@ -131,7 +126,7 @@ export default function LoginPage() {
 
       <Link
         href="/"
-        className="flex h-[52px] items-center justify-center rounded-full border border-maison-line-strong text-[15.5px] font-semibold text-maison-ink transition-colors hover:bg-[#F4ECE0]"
+        className="flex h-[52px] items-center justify-center rounded-full border border-maison-line-strong text-[15.5px] font-semibold text-maison-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-maison-clay/40 hover:bg-[#F4ECE0] dark:hover:bg-maison-panel"
       >
         Continue as guest
       </Link>
@@ -148,7 +143,9 @@ export default function LoginPage() {
 
 function fieldCls(error: boolean) {
   return cn(
-    'w-full rounded-xl border px-4 py-3.5 text-[14.5px] outline-none transition-colors',
-    error ? 'border-maison-clay' : 'border-maison-line-strong focus:border-maison-clay',
+    'w-full rounded-xl border bg-[#FCFAF6] px-4 py-3.5 text-[14.5px] text-maison-ink outline-none transition-all duration-200 placeholder:text-maison-faint focus:bg-white focus:ring-4 dark:bg-maison-cream dark:focus:bg-maison-cream',
+    error
+      ? 'border-maison-clay ring-4 ring-maison-clay/10'
+      : 'border-maison-line-strong focus:border-maison-clay focus:ring-maison-clay/[.09]',
   );
 }

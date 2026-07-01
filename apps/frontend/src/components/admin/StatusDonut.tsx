@@ -38,7 +38,7 @@ export function StatusDonut({ counts }: { counts: Record<string, number> }) {
     <div className="mt-3.5 flex items-center gap-[22px]">
       <div className="relative h-[150px] w-[150px] flex-shrink-0">
         <svg width="150" height="150" viewBox="0 0 150 150" className="-rotate-90">
-          <circle cx="75" cy="75" r={RADIUS} fill="none" stroke="#F0E9DE" strokeWidth="18" />
+          <circle cx="75" cy="75" r={RADIUS} fill="none" className="stroke-maison-line" strokeWidth="18" />
           {segments.map((s) => (
             <circle
               key={s.status}

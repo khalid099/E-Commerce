@@ -25,6 +25,11 @@ export class OrderItem {
   @Column({ name: 'product_name' })
   productName: string;
 
+  // Image snapshot — frozen at order time so historical orders never dereference
+  // the live product (which may be re-imaged or deleted later).
+  @Column({ name: 'product_image_url', type: 'text', nullable: true })
+  productImageUrl: string | null;
+
   @Column({ name: 'unit_price', type: 'decimal', precision: 10, scale: 2 })
   unitPrice: number;
 

@@ -42,7 +42,7 @@ export function OrderConfirmationContent() {
       <main className="mx-auto max-w-[680px] px-5 py-24 text-center sm:px-8">
         <div className="mb-2 font-serif text-[34px]">Order not found</div>
         <p className="mb-6 text-maison-subtle">We couldn&apos;t find that order.</p>
-        <Link href="/orders" className="inline-block rounded-full bg-maison-ink px-6 py-3 font-semibold text-white">
+        <Link href="/orders" className="inline-block rounded-full bg-maison-ink px-6 py-3 font-semibold text-maison-cream">
           View my orders
         </Link>
       </main>
@@ -62,7 +62,7 @@ export function OrderConfirmationContent() {
           <svg className="absolute inset-0" width="88" height="88" viewBox="0 0 88 88" fill="none">
             <path
               d="M28 45 L40 57 L62 33"
-              stroke="#3F7A52"
+              className="stroke-maison-leaf"
               strokeWidth="5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -78,7 +78,7 @@ export function OrderConfirmationContent() {
         </p>
       </div>
 
-      <div className="mt-8 rounded-[20px] border border-maison-line bg-white p-7">
+      <div className="mt-8 rounded-[20px] border border-maison-line bg-white p-7 dark:bg-maison-panel">
         <div className="flex justify-between border-b border-maison-line pb-[18px]">
           <div>
             <div className="text-xs text-maison-subtle">Order number</div>
@@ -93,7 +93,7 @@ export function OrderConfirmationContent() {
         <div className="flex flex-col gap-3.5 border-b border-maison-line py-[18px]">
           {order.items.map((item) => (
             <div key={item.id} className="flex justify-between text-[14.5px]">
-              <span className="text-[#3A342C]">
+              <span className="text-maison-ink">
                 {item.productName}
                 {(item.selectedColor || item.selectedSize) && (
                   <span className="text-maison-clay-dark">
@@ -117,13 +117,13 @@ export function OrderConfirmationContent() {
       <div className="mt-[26px] flex gap-3.5">
         <Link
           href="/orders"
-          className="flex h-[52px] flex-1 items-center justify-center rounded-full bg-maison-ink text-[15px] font-semibold text-white transition-colors hover:bg-black"
+          className="flex h-[52px] flex-1 items-center justify-center rounded-full bg-maison-ink text-[15px] font-semibold text-maison-cream transition-colors hover:bg-maison-ink/90"
         >
           View my orders
         </Link>
         <Link
           href="/products"
-          className="flex h-[52px] flex-1 items-center justify-center rounded-full border border-maison-stone text-[15px] font-semibold transition-colors hover:bg-white"
+          className="flex h-[52px] flex-1 items-center justify-center rounded-full border border-maison-stone text-[15px] font-semibold transition-colors hover:bg-white dark:hover:bg-maison-panel"
         >
           Continue shopping
         </Link>

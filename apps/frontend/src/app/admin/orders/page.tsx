@@ -115,7 +115,7 @@ function OrdersContent() {
               className={`inline-flex items-center gap-1.5 rounded-full border px-[15px] py-[9px] text-[13px] font-semibold transition-colors ${
                 active
                   ? 'border-maison-ink bg-maison-ink text-white'
-                  : 'border-maison-line-strong bg-white text-maison-muted hover:border-maison-clay'
+                  : 'border-maison-line-strong bg-white text-maison-muted hover:border-maison-clay dark:bg-maison-panel'
               }`}
             >
               {f === 'ALL' ? 'All' : formatStatus(f)}
@@ -130,7 +130,7 @@ function OrdersContent() {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-maison-line bg-[#FBF7F1] text-[11.5px] font-bold tracking-[0.8px] text-[#9A9082]">
+              <tr className="border-b border-maison-line bg-[#FBF7F1] text-[11.5px] font-bold tracking-[0.8px] text-maison-subtle dark:bg-maison-panel">
                 <th scope="col" className="px-[26px] py-4 font-bold">ORDER</th>
                 <th scope="col" className="px-3 py-4 font-bold">CUSTOMER</th>
                 <th scope="col" className="px-3 py-4 font-bold">DATE</th>
@@ -142,7 +142,7 @@ function OrdersContent() {
             <tbody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-b border-[#F2EDE4]">
+                  <tr key={i} className="border-b border-[#F2EDE4] dark:border-maison-line">
                     <td colSpan={6} className="px-[26px] py-4">
                       <div className="h-10 animate-pulse rounded-lg bg-maison-panel" />
                     </td>
@@ -162,7 +162,7 @@ function OrdersContent() {
                     <tr
                       key={o.id}
                       onClick={() => setSelected(o)}
-                      className="cursor-pointer border-b border-[#F2EDE4] transition-colors last:border-0 hover:bg-[#FBF7F1]"
+                      className="cursor-pointer border-b border-[#F2EDE4] transition-colors last:border-0 hover:bg-[#FBF7F1] dark:border-maison-line dark:hover:bg-maison-panel"
                     >
                       <td className="px-[26px] py-4 text-[13.5px] font-bold text-maison-ink">
                         #{shortId(o.id)}
@@ -203,7 +203,7 @@ function OrdersContent() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
+            className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40 dark:bg-maison-panel"
           >
             Previous
           </button>
@@ -214,7 +214,7 @@ function OrdersContent() {
             type="button"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40"
+            className="rounded-full border border-maison-line-strong bg-white px-4 py-2 font-medium text-maison-ink disabled:opacity-40 dark:bg-maison-panel"
           >
             Next
           </button>

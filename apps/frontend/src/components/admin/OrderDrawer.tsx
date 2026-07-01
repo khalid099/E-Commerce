@@ -71,7 +71,7 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className="flex items-start justify-between border-b border-maison-line bg-white px-7 py-6">
+        <div className="flex items-start justify-between border-b border-maison-line bg-white px-7 py-6 dark:bg-maison-panel">
           <div className="min-w-0">
             <div className="text-xs font-semibold tracking-[1.2px] text-maison-clay">
               ORDER #{shortId(order.id)}
@@ -88,7 +88,7 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-muted transition-colors hover:bg-[#E9DECF]"
+            className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-muted transition-colors hover:bg-[#E9DECF] dark:bg-maison-line dark:hover:bg-maison-stone"
           >
             <X className="h-[18px] w-[18px]" />
           </button>
@@ -97,7 +97,7 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
         <div className="flex-1 overflow-y-auto px-7 py-6">
           {/* current status */}
           <div className="mb-4 flex items-center justify-between">
-            <div className="text-[12.5px] font-bold tracking-[0.8px] text-[#9A9082]">CURRENT STATUS</div>
+            <div className="text-[12.5px] font-bold tracking-[0.8px] text-maison-subtle">CURRENT STATUS</div>
             <StatusPill status={order.status} />
           </div>
 
@@ -133,7 +133,7 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
                   type="button"
                   onClick={() => changeStatus(OrderStatus.CANCELLED)}
                   disabled={busy}
-                  className="h-12 rounded-xl border border-[#E0BDBD] bg-white px-5 text-sm font-semibold text-[#B23B3B] transition-colors hover:bg-[#F6E1E1] disabled:opacity-60"
+                  className="h-12 rounded-xl border border-[#E0BDBD] bg-white px-5 text-sm font-semibold text-[#B23B3B] transition-colors hover:bg-[#F6E1E1] disabled:opacity-60 dark:bg-maison-panel"
                 >
                   Cancel order
                 </button>
@@ -142,12 +142,12 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
           )}
 
           {/* items */}
-          <div className="mb-3 mt-6 text-[12.5px] font-bold tracking-[0.8px] text-[#9A9082]">ITEMS</div>
-          <div className="rounded-[16px] border border-maison-line bg-white px-[18px] py-1.5">
+          <div className="mb-3 mt-6 text-[12.5px] font-bold tracking-[0.8px] text-maison-subtle">ITEMS</div>
+          <div className="rounded-[16px] border border-maison-line bg-white px-[18px] py-1.5 dark:bg-maison-panel">
             {order.items.map((it) => (
               <div
                 key={it.id}
-                className="flex items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] last:border-0"
+                className="flex items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] last:border-0 dark:border-maison-line"
               >
                 <ProductTone
                   name={it.productName}
@@ -184,10 +184,10 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
           </div>
 
           {/* shipping address */}
-          <div className="mb-3 mt-6 text-[12.5px] font-bold tracking-[0.8px] text-[#9A9082]">
+          <div className="mb-3 mt-6 text-[12.5px] font-bold tracking-[0.8px] text-maison-subtle">
             SHIP TO
           </div>
-          <address className="rounded-[16px] border border-maison-line bg-white px-[18px] py-4 text-[13.5px] not-italic leading-relaxed text-maison-muted">
+          <address className="rounded-[16px] border border-maison-line bg-white px-[18px] py-4 text-[13.5px] not-italic leading-relaxed text-maison-muted dark:bg-maison-panel">
             <div className="font-semibold text-maison-ink">{addr.fullName}</div>
             <div>{addr.line1}</div>
             {addr.line2 && <div>{addr.line2}</div>}

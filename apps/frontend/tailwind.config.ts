@@ -51,20 +51,23 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground))',
         },
         // ── Maison storefront palette ──
+        // Driven by CSS variables (see globals.css) so the whole app remaps
+        // under `.dark`. Channels are space-separated RGB with <alpha-value>
+        // so opacity modifiers (bg-maison-cream/80) keep working.
         maison: {
-          cream: '#FAF6F0', // page background
-          panel: '#FBF7F1', // raised tint
-          ink: '#211C16', // primary text / dark surfaces
-          clay: '#C75B39', // terracotta accent
-          'clay-dark': '#A8492C', // accent on light, eyebrows
-          line: '#EBE3D7', // hairline borders
-          'line-strong': '#E3DACB', // input borders
-          stone: '#D8CDBE', // muted dividers / disabled
-          muted: '#5C5347', // body copy
-          subtle: '#8A8073', // secondary copy
-          faint: '#A89C8B', // tertiary copy / icons
-          leaf: '#3F7A52', // success / in-stock
-          'leaf-soft': '#EAF3EA', // success surface
+          cream: 'rgb(var(--m-cream) / <alpha-value>)', // page background
+          panel: 'rgb(var(--m-panel) / <alpha-value>)', // raised tint
+          ink: 'rgb(var(--m-ink) / <alpha-value>)', // primary text / dark surfaces
+          clay: 'rgb(var(--m-clay) / <alpha-value>)', // terracotta accent
+          'clay-dark': 'rgb(var(--m-clay-dark) / <alpha-value>)', // accent on light, eyebrows
+          line: 'rgb(var(--m-line) / <alpha-value>)', // hairline borders
+          'line-strong': 'rgb(var(--m-line-strong) / <alpha-value>)', // input borders
+          stone: 'rgb(var(--m-stone) / <alpha-value>)', // muted dividers / disabled
+          muted: 'rgb(var(--m-muted) / <alpha-value>)', // body copy
+          subtle: 'rgb(var(--m-subtle) / <alpha-value>)', // secondary copy
+          faint: 'rgb(var(--m-faint) / <alpha-value>)', // tertiary copy / icons
+          leaf: 'rgb(var(--m-leaf) / <alpha-value>)', // success / in-stock
+          'leaf-soft': 'rgb(var(--m-leaf-soft) / <alpha-value>)', // success surface
         },
       },
       borderRadius: {
@@ -123,6 +126,18 @@ const config: Config = {
           from: { opacity: '0' },
           to: { opacity: '1' },
         },
+        'auth-reveal': {
+          from: { opacity: '0', transform: 'translateY(14px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        sheen: {
+          '0%': { transform: 'translateX(-120%) skewX(-18deg)' },
+          '100%': { transform: 'translateX(240%) skewX(-18deg)' },
+        },
+        'drift-slow': {
+          '0%,100%': { transform: 'translate(0,0) scale(1)' },
+          '50%': { transform: 'translate(16px,-22px) scale(1.08)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -136,6 +151,9 @@ const config: Config = {
         'drawer-in': 'drawer-in 0.4s cubic-bezier(.16,.84,.44,1) both',
         'modal-in': 'modal-in 0.4s cubic-bezier(.16,.84,.44,1) both',
         'fade-in': 'fade-in 0.25s ease both',
+        'auth-reveal': 'auth-reveal 0.6s cubic-bezier(.16,.84,.44,1) both',
+        sheen: 'sheen 0.9s cubic-bezier(.16,.84,.44,1)',
+        'drift-slow': 'drift-slow 12s ease-in-out infinite',
       },
     },
   },

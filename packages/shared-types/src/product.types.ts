@@ -31,6 +31,8 @@ export interface Product {
   sizes: string[] | null;
   stockQuantity: number;
   isActive: boolean;
+  /** Flagged as a new arrival — drives the NEW badge and the New Arrivals view. */
+  isNew: boolean;
   category: Category;
   categoryId: string;
   createdAt: string;
@@ -45,6 +47,8 @@ export interface ProductQueryParams {
   minPrice?: number;
   maxPrice?: number;
   sortBy?: SortBy;
+  /** Restrict to new arrivals only. */
+  isNew?: boolean;
   page?: number;
   limit?: number;
 }
@@ -61,6 +65,7 @@ export interface CreateProductDto {
   reviewCount?: number;
   colors?: ProductColor[];
   sizes?: string[];
+  isNew?: boolean;
 }
 
 export type UpdateProductDto = Partial<CreateProductDto> & { isActive?: boolean };

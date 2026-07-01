@@ -22,6 +22,7 @@ export class ProductsService {
       minPrice,
       maxPrice,
       sortBy = SortBy.NEWEST,
+      isNew,
       page = 1,
       limit = 12,
     } = query;
@@ -39,6 +40,10 @@ export class ProductsService {
 
     if (categoryId) {
       qb.andWhere('product.categoryId = :categoryId', { categoryId });
+    }
+
+    if (isNew) {
+      qb.andWhere('product.isNew = :isNew', { isNew: true });
     }
 
     if (minPrice !== undefined) {

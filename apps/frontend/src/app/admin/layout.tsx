@@ -60,8 +60,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="maison flex min-h-screen font-sans text-maison-ink">
-      {/* sidebar */}
-      <aside className="sticky top-0 flex h-screen w-[248px] flex-shrink-0 flex-col bg-maison-ink px-[18px] py-[26px] text-[#CFC6B8]">
+      {/* sidebar — a permanently dark band, so it is pinned with dark:bg-maison-panel
+          to stop `maison-ink` inverting to a light surface under `.dark`. */}
+      <aside className="sticky top-0 flex h-screen w-[248px] flex-shrink-0 flex-col bg-maison-ink px-[18px] py-[26px] text-[#CFC6B8] dark:bg-maison-panel">
         <div className="px-3 pb-[26px] pt-1.5">
           <MaisonLogo tone="cream" className="text-[28px]" />
         </div>
@@ -77,8 +78,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 className={cn(
                   'flex items-center gap-3 rounded-[11px] px-3 py-[11px] text-sm transition-colors',
                   active
-                    ? 'bg-maison-clay font-semibold text-maison-cream shadow-[0_8px_20px_rgba(199,91,57,0.3)]'
-                    : 'font-medium text-[#B6AC99] hover:bg-[#342D24] hover:text-maison-cream',
+                    ? 'bg-maison-clay font-semibold text-maison-cream shadow-[0_8px_20px_rgba(199,91,57,0.3)] dark:text-maison-ink'
+                    : 'font-medium text-[#B6AC99] hover:bg-[#342D24] hover:text-maison-cream dark:hover:bg-maison-line dark:hover:text-maison-ink',
                 )}
               >
                 <Icon className="h-[18px] w-[18px]" />
@@ -93,20 +94,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="mt-auto border-t border-[#342D24] pt-4">
+        <div className="mt-auto border-t border-[#342D24] pt-4 dark:border-maison-line">
           <div className="flex items-center gap-[11px] px-3 py-2">
             <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-maison-clay text-[15px] font-bold text-white">
               {initial}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13.5px] font-semibold text-maison-cream">{fullName}</div>
+              <div className="truncate text-[13.5px] font-semibold text-maison-cream dark:text-maison-ink">{fullName}</div>
               <div className="truncate text-[11.5px] text-[#8A8073]">{user?.email ?? ''}</div>
             </div>
           </div>
           <button
             type="button"
             onClick={() => logout()}
-            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-[11px] text-[13.5px] font-medium text-[#B6AC99] transition-colors hover:bg-[#342D24] hover:text-maison-cream"
+            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-[11px] text-[13.5px] font-medium text-[#B6AC99] transition-colors hover:bg-[#342D24] hover:text-maison-cream dark:hover:bg-maison-line dark:hover:text-maison-ink"
           >
             <LogOut className="h-[17px] w-[17px]" />
             Sign out
@@ -116,7 +117,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-[60] flex h-[74px] items-center justify-between gap-6 border-b border-maison-line bg-[rgba(250,246,240,0.82)] px-10 backdrop-blur-[14px]">
+        <header className="sticky top-0 z-[60] flex h-[74px] items-center justify-between gap-6 border-b border-maison-line bg-[rgba(250,246,240,0.82)] px-10 backdrop-blur-[14px] dark:bg-[rgba(24,20,16,0.82)]">
           <div>
             <div className="text-xs font-semibold tracking-[1.4px] text-maison-clay">{page.crumb}</div>
             <div className="mt-0.5 font-serif text-[25px] leading-none text-maison-ink">{page.title}</div>

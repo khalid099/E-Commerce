@@ -9,7 +9,7 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('rounded-[18px] border border-maison-line bg-white', className)}>
+    <div className={cn('rounded-[18px] border border-maison-line bg-white dark:bg-maison-panel', className)}>
       {children}
     </div>
   );
