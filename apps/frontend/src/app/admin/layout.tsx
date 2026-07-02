@@ -3,8 +3,16 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, ClipboardList, LogOut, type LucideIcon } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Package,
+  ClipboardList,
+  MessageSquare,
+  LogOut,
+  type LucideIcon,
+} from 'lucide-react';
 import { MaisonLogo } from '@/components/layout/MaisonLogo';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import { useAuthStore } from '@/store/authStore';
 import { listAdminOrders } from '@/lib/adminOrders';
 import { OrderStatus } from '@ecommerce/shared-types';
@@ -20,12 +28,14 @@ const NAV: NavItem[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/admin/reviews', label: 'Feedback', icon: MessageSquare },
 ];
 
 const PAGE: Record<string, { crumb: string; title: string }> = {
   '/admin/dashboard': { crumb: 'OVERVIEW', title: 'Dashboard' },
   '/admin/products': { crumb: 'CATALOG', title: 'Products' },
   '/admin/orders': { crumb: 'FULFILMENT', title: 'Orders' },
+  '/admin/reviews': { crumb: 'CUSTOMERS', title: 'Feedback' },
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +64,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => setPendingCount(0));
   }, [pathname]);
 
-  const page = PAGE[pathname] ?? { crumb: 'ADMIN', title: 'ShopHive' };
+  // Longest matching prefix so nested routes (products/new, products/:id/edit)
+  // inherit their section's crumb and title.
+  const pageKey = Object.keys(PAGE)
+    .filter((k) => pathname === k || pathname.startsWith(`${k}/`))
+    .sort((a, b) => b.length - a.length)[0];
+  const page = (pageKey ? PAGE[pageKey] : undefined) ?? { crumb: 'ADMIN', title: 'ShopHive' };
   const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Admin';
   const initial = (user?.firstName ?? 'A').charAt(0).toUpperCase();
 
@@ -122,7 +137,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="text-xs font-semibold tracking-[1.4px] text-maison-clay">{page.crumb}</div>
             <div className="mt-0.5 font-serif text-[25px] leading-none text-maison-ink">{page.title}</div>
           </div>
-          <div className="text-[13px] text-maison-subtle">{today}</div>
+          <div className="flex items-center gap-4">
+            <div className="hidden text-[13px] text-maison-subtle sm:block">{today}</div>
+            <NotificationBell />
+          </div>
         </header>
 
         <main className="animate-page-in px-10 pb-16 pt-[34px]">{children}</main>

@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { DollarSign, ShoppingBag, TrendingUp, Users } from 'lucide-react';
+import {
+  DollarSign,
+  ShoppingBag,
+  TrendingUp,
+  Users,
+  BarChart3,
+  PieChart,
+  Trophy,
+  Receipt,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Panel } from '@/components/admin/Panel';
 import { StatCard } from '@/components/admin/StatCard';
@@ -13,11 +22,8 @@ import { ProductTone } from '@/components/storefront/ProductTone';
 import { getDashboardStats } from '@/lib/dashboard';
 import { listAdminOrders } from '@/lib/adminOrders';
 import { money, compactMoney } from '@/lib/storefront';
+import { shortId } from '@/lib/utils';
 import type { DashboardStats, Order } from '@ecommerce/shared-types';
-
-function shortId(id: string): string {
-  return id.slice(0, 8).toUpperCase();
-}
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -63,7 +69,17 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const sixMoTotal = stats.revenueByMonth.reduce((sum, m) => sum + m.revenue, 0);
+  const months = stats.revenueByMonth;
+  const sixMoTotal = months.reduce((sum, m) => sum + m.revenue, 0);
+  // Month-over-month revenue delta from the last two realised months.
+  const revenueTrend =
+    months.length >= 2 && months[months.length - 2].revenue > 0
+      ? Math.round(
+          ((months[months.length - 1].revenue - months[months.length - 2].revenue) /
+            months[months.length - 2].revenue) *
+            100,
+        )
+      : null;
 
   return (
     <div className="space-y-5">
@@ -74,34 +90,45 @@ export default function AdminDashboardPage() {
           value={compactMoney(stats.totalRevenue)}
           icon={DollarSign}
           iconClassName="bg-[#FBEFE9] text-[#C75B39]"
+          accent="#C75B39"
+          trend={revenueTrend}
+          caption="vs last month"
         />
         <StatCard
           label="Total orders"
           value={String(stats.totalOrders)}
           icon={ShoppingBag}
           iconClassName="bg-[#EAF0F6] text-[#1A5A9A]"
+          accent="#1A5A9A"
         />
         <StatCard
           label="Avg. order value"
           value={money(stats.averageOrderValue)}
           icon={TrendingUp}
           iconClassName="bg-[#F5EEDD] text-[#9A6B1A]"
+          accent="#9A6B1A"
         />
         <StatCard
           label="Customers"
           value={String(stats.totalCustomers)}
           icon={Users}
           iconClassName="bg-[#F2E8EC] text-[#A05A6E]"
+          accent="#A05A6E"
         />
       </div>
 
       {/* charts row */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.55fr_1fr]">
-        <Panel className="px-[26px] py-6">
+        <Panel className="px-[26px] py-6 transition-shadow duration-300 hover:shadow-[0_18px_44px_rgba(120,90,60,0.10)]">
           <div className="flex items-start justify-between">
-            <div>
-              <div className="text-base font-bold text-maison-ink">Revenue</div>
-              <div className="mt-0.5 text-[13px] text-maison-subtle">Last 6 months</div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FBEFE9] text-[#C75B39]">
+                <BarChart3 className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <div className="text-base font-bold text-maison-ink">Revenue</div>
+                <div className="mt-0.5 text-[13px] text-maison-subtle">Last 6 months</div>
+              </div>
             </div>
             <div className="text-right">
               <div className="text-[22px] font-extrabold tracking-[-0.5px] tabular-nums text-maison-ink">
@@ -113,18 +140,30 @@ export default function AdminDashboardPage() {
           <RevenueBars data={stats.revenueByMonth} />
         </Panel>
 
-        <Panel className="px-[26px] py-6">
-          <div className="text-base font-bold text-maison-ink">Orders by status</div>
-          <div className="mt-0.5 text-[13px] text-maison-subtle">{stats.totalOrders} orders total</div>
+        <Panel className="px-[26px] py-6 transition-shadow duration-300 hover:shadow-[0_18px_44px_rgba(120,90,60,0.10)]">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E2F0E6] text-[#3F7A52]">
+              <PieChart className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <div className="text-base font-bold text-maison-ink">Orders by status</div>
+              <div className="mt-0.5 text-[13px] text-maison-subtle">{stats.totalOrders} orders total</div>
+            </div>
+          </div>
           <StatusDonut counts={stats.ordersByStatus} />
         </Panel>
       </div>
 
       {/* top sellers + recent orders */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Panel className="px-[26px] py-6">
+        <Panel className="px-[26px] py-6 transition-shadow duration-300 hover:shadow-[0_18px_44px_rgba(120,90,60,0.10)]">
           <div className="mb-1.5 flex items-center justify-between">
-            <div className="text-base font-bold text-maison-ink">Top-selling products</div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F5EEDD] text-[#9A6B1A]">
+                <Trophy className="h-[18px] w-[18px]" />
+              </span>
+              <div className="text-base font-bold text-maison-ink">Top-selling products</div>
+            </div>
             <div className="text-[12.5px] text-maison-subtle">by units sold</div>
           </div>
           {stats.topProducts.length === 0 ? (
@@ -135,7 +174,20 @@ export default function AdminDashboardPage() {
                 key={p.productId}
                 className="flex items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] dark:border-maison-line last:border-0"
               >
-                <span className="w-[22px] font-serif text-[20px] text-maison-clay">{i + 1}</span>
+                <span
+                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-serif text-[15px] font-semibold"
+                  style={
+                    i === 0
+                      ? { background: 'linear-gradient(135deg,#F0D67E,#D9A93C)', color: '#6B4E12' }
+                      : i === 1
+                        ? { background: 'linear-gradient(135deg,#E4E4E4,#BFC3C7)', color: '#5A5E63' }
+                        : i === 2
+                          ? { background: 'linear-gradient(135deg,#E7C29A,#C88A5A)', color: '#6B4023' }
+                          : { background: 'transparent', color: 'rgb(var(--m-clay))' }
+                  }
+                >
+                  {i + 1}
+                </span>
                 <ProductTone
                   name={p.productName}
                   categoryName={p.categoryName}
@@ -156,9 +208,14 @@ export default function AdminDashboardPage() {
           )}
         </Panel>
 
-        <Panel className="px-[26px] py-6">
+        <Panel className="px-[26px] py-6 transition-shadow duration-300 hover:shadow-[0_18px_44px_rgba(120,90,60,0.10)]">
           <div className="mb-1.5 flex items-center justify-between">
-            <div className="text-base font-bold text-maison-ink">Recent orders</div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF0F6] text-[#1A5A9A]">
+                <Receipt className="h-[18px] w-[18px]" />
+              </span>
+              <div className="text-base font-bold text-maison-ink">Recent orders</div>
+            </div>
             <button
               type="button"
               onClick={() => router.push('/admin/orders')}

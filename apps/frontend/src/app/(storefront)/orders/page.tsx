@@ -2,29 +2,53 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import { ProductTone } from '@/components/storefront/ProductTone';
 import { StatusBadge } from '@/components/storefront/StatusBadge';
+import { ReviewModal } from '@/components/storefront/ReviewModal';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Pagination } from '@/components/ui/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { money } from '@/lib/storefront';
 import { cn } from '@/lib/utils';
 import type { Order, PaginatedResponse, ApiResponse } from '@ecommerce/shared-types';
+import { OrderStatus } from '@ecommerce/shared-types';
+
+interface ReviewTarget {
+  productId: string;
+  productName: string;
+}
+
+const PAGE_SIZE = 5;
 
 export default function OrdersPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
+  const [reviewed, setReviewed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    setIsLoading(true);
     api
-      .get<ApiResponse<PaginatedResponse<Order>>>('/orders', { params: { page: 1, limit: 20 } })
-      .then((res) => setOrders(res.data.data.data))
-      .catch(() => setOrders([]))
+      .get<ApiResponse<PaginatedResponse<Order>>>('/orders', {
+        params: { page, limit: PAGE_SIZE },
+      })
+      .then((res) => {
+        setOrders(res.data.data.data);
+        setTotalPages(res.data.data.meta.totalPages);
+      })
+      .catch(() => {
+        setOrders([]);
+        setTotalPages(1);
+      })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [page]);
 
   return (
     <main className="mx-auto max-w-[880px] animate-page-in px-5 pb-12 pt-11 sm:px-8">
@@ -44,33 +68,64 @@ export default function OrdersPage() {
       {isLoading ? (
         <OrdersSkeleton />
       ) : orders.length === 0 ? (
-        <div className="rounded-[22px] border border-maison-line bg-white px-5 py-20 text-center dark:bg-maison-panel">
-          <div className="mb-2 font-serif text-[30px]">No orders yet</div>
-          <p className="mb-[22px] text-maison-subtle">When you place an order, it will appear here.</p>
-          <Link
-            href="/products"
-            className="inline-block rounded-full bg-maison-clay px-7 py-3.5 font-semibold text-white"
-          >
-            Browse products
-          </Link>
-        </div>
+        <EmptyState
+          title="No orders yet"
+          description="When you place an order, it will appear here."
+          action={{ href: '/products', label: 'Browse products' }}
+          className="py-20"
+        />
       ) : (
-        <div className="flex flex-col gap-[18px]">
-          {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-[18px]">
+            {orders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                reviewed={reviewed}
+                onReview={setReviewTarget}
+              />
+            ))}
+          </div>
+
+          <Pagination page={page} totalPages={totalPages} onGo={setPage} />
+        </>
+      )}
+
+      {reviewTarget && (
+        <ReviewModal
+          productId={reviewTarget.productId}
+          productName={reviewTarget.productName}
+          open
+          onOpenChange={(next) => !next && setReviewTarget(null)}
+          onSaved={() =>
+            setReviewed((prev) => new Set(prev).add(reviewTarget.productId))
+          }
+        />
       )}
     </main>
   );
 }
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({
+  order,
+  reviewed,
+  onReview,
+}: {
+  order: Order;
+  reviewed: Set<string>;
+  onReview: (target: ReviewTarget) => void;
+}) {
+  const delivered = order.status === OrderStatus.DELIVERED;
   return (
-    <Link
-      href={`/orders/${order.id}`}
-      className="group block overflow-hidden rounded-[20px] border border-maison-line bg-white shadow-[0_1px_2px_rgba(120,90,60,.04)] transition-all duration-300 hover:-translate-y-0.5 hover:border-maison-clay/40 hover:shadow-[0_18px_40px_rgba(120,90,60,.12)] dark:bg-maison-panel"
-    >
+    <div className="group relative overflow-hidden rounded-[20px] border border-maison-line bg-white shadow-[0_1px_2px_rgba(120,90,60,.04)] transition-all duration-300 hover:-translate-y-0.5 hover:border-maison-clay/40 hover:shadow-[0_18px_40px_rgba(120,90,60,.12)] dark:bg-maison-panel">
+      {/* Whole-card navigation sits behind the content; interactive controls
+          (review buttons) opt above it with a higher z-index. */}
+      <Link
+        href={`/orders/${order.id}`}
+        aria-label={`View order #${order.id.slice(0, 8).toUpperCase()}`}
+        className="absolute inset-0 z-10"
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-maison-line bg-gradient-to-b from-maison-panel to-white dark:to-maison-panel px-6 py-[18px]">
         <div className="flex flex-wrap items-center gap-x-9 gap-y-3">
           <Meta label="ORDER" value={`#${order.id.slice(0, 8).toUpperCase()}`} mono />
@@ -104,6 +159,18 @@ function OrderCard({ order }: { order: Order }) {
                   <span> · {[item.selectedColor, item.selectedSize].filter(Boolean).join(' / ')}</span>
                 )}
               </div>
+              {delivered && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onReview({ productId: item.productId, productName: item.productName })
+                  }
+                  className="relative z-20 mt-2 inline-flex items-center gap-1.5 rounded-full border border-maison-line-strong px-3 py-1 text-[12px] font-semibold text-maison-clay-dark transition-colors hover:border-maison-clay hover:text-maison-clay"
+                >
+                  <Star className="h-3 w-3" />
+                  {reviewed.has(item.productId) ? 'Edit review' : 'Write a review'}
+                </button>
+              )}
             </div>
             <div className="text-sm font-semibold tabular-nums">{money(item.lineTotal)}</div>
           </div>
@@ -119,7 +186,7 @@ function OrderCard({ order }: { order: Order }) {
           <ChevronRight className="h-4 w-4" />
         </span>
       </div>
-    </Link>
+    </div>
   );
 }
 

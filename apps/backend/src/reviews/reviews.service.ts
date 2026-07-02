@@ -1,9 +1,18 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { Repository, DataSource, EntityManager, SelectQueryBuilder } from 'typeorm';
 import type {
   Review as ReviewResponse,
+  AdminReview as AdminReviewResponse,
+  MyReview as MyReviewResponse,
   ReviewSummary,
+  ReviewEligibility,
   PaginatedResponse,
 } from '@ecommerce/shared-types';
 import { Review } from './entities/review.entity';
@@ -14,15 +23,22 @@ import { User } from '../users/entities/user.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { QueryReviewDto } from './dto/query-review.dto';
+import { QueryAdminReviewDto } from './dto/query-admin-review.dto';
+import { ReplyReviewDto } from './dto/reply-review.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class ReviewsService {
+  private readonly logger = new Logger(ReviewsService.name);
+
   constructor(
     @InjectRepository(Review)
     private readonly reviewRepo: Repository<Review>,
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private mapReview(review: Review): ReviewResponse {
@@ -34,8 +50,24 @@ export class ReviewsService {
       title: review.title ?? null,
       comment: review.comment ?? null,
       verifiedPurchase: review.verifiedPurchase,
+      reply: review.reply ?? null,
+      repliedAt: review.repliedAt ? review.repliedAt.toISOString() : null,
       createdAt: review.createdAt.toISOString(),
       updatedAt: review.updatedAt.toISOString(),
+    };
+  }
+
+  private mapAdminReview(review: Review): AdminReviewResponse {
+    return { ...this.mapReview(review), productName: review.product?.name ?? '—' };
+  }
+
+  private mapMyReview(review: Review): MyReviewResponse {
+    return {
+      ...this.mapReview(review),
+      productName: review.product?.name ?? '—',
+      productImageUrl: review.product?.imageUrl ?? null,
+      // The product has no dedicated slug column — its id is the routable identifier.
+      productSlug: review.productId,
     };
   }
 
@@ -68,14 +100,142 @@ export class ReviewsService {
     };
   }
 
+  /** [Admin] Every review across the catalogue, newest first, optionally filtered by rating. */
+  async listAllForAdmin(query: QueryAdminReviewDto): Promise<PaginatedResponse<AdminReviewResponse>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const qb = this.reviewRepo
+      .createQueryBuilder('review')
+      // Join only the product columns we render — avoid pulling the whole product row.
+      .leftJoin('review.product', 'product')
+      .addSelect(['product.id', 'product.name'])
+      .orderBy('review.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (query.rating) {
+      qb.andWhere('review.rating = :rating', { rating: query.rating });
+    }
+
+    const [reviews, total] = await qb.getManyAndCount();
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: reviews.map((r) => this.mapAdminReview(r)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  /** Every review the current customer has written, across all products, newest first. */
+  async listMine(
+    userId: string,
+    query: QueryReviewDto,
+  ): Promise<PaginatedResponse<MyReviewResponse>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const [reviews, total] = await this.reviewRepo
+      .createQueryBuilder('review')
+      .leftJoin('review.product', 'product')
+      .addSelect(['product.id', 'product.name', 'product.imageUrl'])
+      .where('review.userId = :userId', { userId })
+      .orderBy('review.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const totalPages = Math.ceil(total / limit);
+    return {
+      data: reviews.map((r) => this.mapMyReview(r)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  /** [Admin] Set or update the store's public reply to a review. */
+  async setReply(id: string, dto: ReplyReviewDto): Promise<AdminReviewResponse> {
+    const review = await this.reviewRepo.findOne({
+      where: { id },
+      relations: { product: true },
+    });
+    if (!review) throw new NotFoundException('Review not found');
+
+    review.reply = dto.reply.trim();
+    review.repliedAt = new Date();
+    const saved = await this.reviewRepo.save(review);
+
+    // Let the reviewer know the store responded — best-effort, never blocks the reply.
+    try {
+      await this.notificationsService.create({
+        userId: saved.userId,
+        type: NotificationType.REVIEW_REPLY,
+        title: 'The store replied to your review',
+        message: `${saved.product?.name ?? 'A product'} — the store responded to your review.`,
+        metadata: { productId: saved.productId },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify review reply for review ${saved.id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+
+    return this.mapAdminReview(saved);
+  }
+
+  /** [Admin] Remove the store's reply from a review. */
+  async clearReply(id: string): Promise<void> {
+    const result = await this.reviewRepo.update({ id }, { reply: null, repliedAt: null });
+    if (result.affected === 0) throw new NotFoundException('Review not found');
+  }
+
+  /** [Admin] Remove a review and refresh the product's cached rating. */
+  async deleteByIdForAdmin(id: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const review = await manager.findOne(Review, { where: { id } });
+      if (!review) throw new NotFoundException('Review not found');
+      await manager.delete(Review, { id });
+      await this.recomputeProductRating(manager, review.productId);
+    });
+  }
+
   async getSummary(productId: string): Promise<ReviewSummary> {
-    const rows = await this.reviewRepo
+    return this.aggregateRatings((qb) =>
+      qb.where('review.productId = :productId', { productId }),
+    );
+  }
+
+  /** [Admin] Rating summary across the whole catalogue, driving the feedback header. */
+  async getAdminSummary(): Promise<ReviewSummary> {
+    return this.aggregateRatings();
+  }
+
+  /** Shared rating rollup: counts per star, total and mean, over an optional scope. */
+  private async aggregateRatings(
+    scope?: (qb: SelectQueryBuilder<Review>) => SelectQueryBuilder<Review>,
+  ): Promise<ReviewSummary> {
+    let qb = this.reviewRepo
       .createQueryBuilder('review')
       .select('review.rating', 'rating')
       .addSelect('COUNT(*)', 'count')
-      .where('review.productId = :productId', { productId })
-      .groupBy('review.rating')
-      .getRawMany<{ rating: number; count: string }>();
+      .groupBy('review.rating');
+    if (scope) qb = scope(qb);
+
+    const rows = await qb.getRawMany<{ rating: number; count: string }>();
 
     const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let count = 0;
@@ -99,8 +259,22 @@ export class ReviewsService {
     return review ? this.mapReview(review) : null;
   }
 
+  /** Whether the customer is allowed to review — only after an order for this product is delivered. */
+  async getEligibility(userId: string, productId: string): Promise<ReviewEligibility> {
+    return { canReview: await this.hasDeliveredPurchase(userId, productId) };
+  }
+
   async create(user: User, productId: string, dto: CreateReviewDto): Promise<ReviewResponse> {
     await this.assertProductExists(productId);
+
+    // Reviews are earned: only a customer whose order for this product has been
+    // delivered may review it. This also makes every review a verified purchase.
+    const verifiedPurchase = await this.hasDeliveredPurchase(user.id, productId);
+    if (!verifiedPurchase) {
+      throw new ForbiddenException(
+        'You can review this product only after your order for it has been delivered',
+      );
+    }
 
     const existing = await this.reviewRepo.findOne({
       where: { userId: user.id, productId },
@@ -109,7 +283,6 @@ export class ReviewsService {
       throw new ConflictException('You have already reviewed this product');
     }
 
-    const verifiedPurchase = await this.hasPurchased(user.id, productId);
     const authorName = this.displayName(user);
 
     return this.dataSource.transaction(async (manager) => {
@@ -181,15 +354,15 @@ export class ReviewsService {
     );
   }
 
-  /** A reviewer counts as verified when they have a non-cancelled order line for this product. */
-  private async hasPurchased(userId: string, productId: string): Promise<boolean> {
+  /** A customer may review, and counts as verified, only once an order for this product is delivered. */
+  private async hasDeliveredPurchase(userId: string, productId: string): Promise<boolean> {
     const count = await this.reviewRepo.manager
       .getRepository(OrderItem)
       .createQueryBuilder('item')
       .innerJoin(Order, 'ord', 'ord.id = item.orderId')
       .where('item.productId = :productId', { productId })
       .andWhere('ord.userId = :userId', { userId })
-      .andWhere('ord.status != :cancelled', { cancelled: OrderStatus.CANCELLED })
+      .andWhere('ord.status = :delivered', { delivered: OrderStatus.DELIVERED })
       .getCount();
     return count > 0;
   }

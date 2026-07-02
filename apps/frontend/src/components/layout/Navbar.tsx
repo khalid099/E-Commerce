@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Heart, User, ShoppingCart, Menu, X, Sun, Moon, ChevronDown, LogOut } from 'lucide-react';
 import { MaisonLogo } from './MaisonLogo';
+import { NotificationBell } from './NotificationBell';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
@@ -41,8 +42,6 @@ export function Navbar() {
   const cartBump = useUiStore((s) => s.cartBump);
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggle);
-
-  const accountHref = user?.role === UserRole.ADMIN ? '/admin/dashboard' : '/orders';
 
   // "Orders" is a protected customer route — only surface it once signed in,
   // otherwise a guest tapping it just bounces off the middleware to /login.
@@ -175,6 +174,9 @@ export function Navbar() {
               )}
             </button>
 
+            {/* Real-time notification bell — only meaningful once signed in. */}
+            {user && <NotificationBell />}
+
             <Link
               href="/wishlist"
               aria-label={`Wishlist, ${wishCount} item${wishCount === 1 ? '' : 's'}`}
@@ -238,7 +240,7 @@ export function Navbar() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href={accountHref}>
+                    <Link href="/profile">
                       <User className="h-4 w-4" />
                       Profile
                     </Link>

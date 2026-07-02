@@ -118,6 +118,14 @@ const config: Config = {
           from: { transform: 'translateX(100%)' },
           to: { transform: 'translateX(0)' },
         },
+        'drawer-out': {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(100%)' },
+        },
+        'fade-out': {
+          from: { opacity: '1' },
+          to: { opacity: '0' },
+        },
         'modal-in': {
           from: { opacity: '0', transform: 'translateY(26px) scale(.97)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
@@ -149,6 +157,8 @@ const config: Config = {
         floaty: 'floaty 7s ease-in-out infinite',
         'grow-bar': 'grow-bar 0.8s cubic-bezier(.16,.84,.44,1) both',
         'drawer-in': 'drawer-in 0.4s cubic-bezier(.16,.84,.44,1) both',
+        'drawer-out': 'drawer-out 0.3s cubic-bezier(.4,0,.7,.2) both',
+        'fade-out': 'fade-out 0.3s ease both',
         'modal-in': 'modal-in 0.4s cubic-bezier(.16,.84,.44,1) both',
         'fade-in': 'fade-in 0.25s ease both',
         'auth-reveal': 'auth-reveal 0.6s cubic-bezier(.16,.84,.44,1) both',

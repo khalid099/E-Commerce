@@ -67,9 +67,3 @@ export function categoryTone(categoryName?: string | null): string {
 export function productInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || 'M';
 }
-
-/** A five-glyph star string for a 0–5 rating. */
-export function stars(rating: number): string {
-  const filled = Math.round(rating);
-  return '★★★★★'.slice(0, filled) + '☆☆☆☆☆'.slice(0, 5 - filled);
-}

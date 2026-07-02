@@ -4,12 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Minus, Trash2, Heart } from 'lucide-react';
 import { ProductTone } from './ProductTone';
+import { StarRating } from '@/components/ui/StarRating';
 import { useAddToCart } from '@/hooks/useAddToCart';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useCartStore } from '@/store/cartStore';
 import { useUiStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
-import { money, stars } from '@/lib/storefront';
+import { money } from '@/lib/storefront';
 import type { Product } from '@ecommerce/shared-types';
 
 interface ProductCardProps {
@@ -181,7 +182,14 @@ export function ProductCard({ product, isNew = false, showRating = false }: Prod
           <span className="text-[13px] text-maison-faint line-through">{money(compareAt)}</span>
         )}
         {showRating && product.rating != null && (
-          <span className="ml-auto text-xs text-maison-faint">{stars(Number(product.rating))}</span>
+          <span className="ml-auto flex items-center gap-1.5">
+            <StarRating value={Number(product.rating)} size={13} />
+            {product.reviewCount ? (
+              <span className="text-[12px] font-medium text-maison-subtle">
+                ({product.reviewCount})
+              </span>
+            ) : null}
+          </span>
         )}
       </div>
     </Link>

@@ -12,7 +12,7 @@ import { PasswordField } from '@/components/auth/PasswordField';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
-import { cn } from '@/lib/utils';
+import { fieldCls } from '@/lib/formStyles';
 import type { User } from '@ecommerce/shared-types';
 import { UserRole } from '@ecommerce/shared-types';
 
@@ -138,14 +138,5 @@ export default function LoginPage() {
         </Link>
       </div>
     </AuthShell>
-  );
-}
-
-function fieldCls(error: boolean) {
-  return cn(
-    'w-full rounded-xl border bg-[#FCFAF6] px-4 py-3.5 text-[14.5px] text-maison-ink outline-none transition-all duration-200 placeholder:text-maison-faint focus:bg-white focus:ring-4 dark:bg-maison-cream dark:focus:bg-maison-cream',
-    error
-      ? 'border-maison-clay ring-4 ring-maison-clay/10'
-      : 'border-maison-line-strong focus:border-maison-clay focus:ring-maison-clay/[.09]',
   );
 }

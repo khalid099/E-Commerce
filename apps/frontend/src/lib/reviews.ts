@@ -1,12 +1,22 @@
 import api from '@/lib/api';
 import type {
   Review,
+  MyReview,
   ReviewSummary,
+  ReviewEligibility,
   CreateReviewDto,
   UpdateReviewDto,
   PaginatedResponse,
   ApiResponse,
 } from '@ecommerce/shared-types';
+
+/** The current customer's reviews across all products, most recent first. */
+export async function listMyReviews(page = 1, limit = 10): Promise<PaginatedResponse<MyReview>> {
+  const res = await api.get<ApiResponse<PaginatedResponse<MyReview>>>('/reviews/mine', {
+    params: { page, limit },
+  });
+  return res.data.data;
+}
 
 export async function listProductReviews(
   productId: string,
@@ -28,6 +38,14 @@ export async function getProductReviewSummary(productId: string): Promise<Review
 /** The current customer's review for this product, or null if they haven't written one. */
 export async function getMyProductReview(productId: string): Promise<Review | null> {
   const res = await api.get<ApiResponse<Review | null>>(`/products/${productId}/reviews/mine`);
+  return res.data.data;
+}
+
+/** Whether the current customer may review this product (requires a delivered order). */
+export async function getReviewEligibility(productId: string): Promise<ReviewEligibility> {
+  const res = await api.get<ApiResponse<ReviewEligibility>>(
+    `/products/${productId}/reviews/eligibility`,
+  );
   return res.data.data;
 }
 

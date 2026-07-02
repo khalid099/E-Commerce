@@ -1,3 +1,9 @@
+// The allowed browser origin, resolved in one place. WebSocket gateways evaluate
+// their @WebSocketGateway() options at decoration time — before Nest's DI is
+// available — so the gateway can't use ConfigService; it shares this helper
+// instead of reading process.env a second, divergent way.
+export const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
+
 export default () => ({
   port: parseInt(process.env.PORT ?? '3001', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',

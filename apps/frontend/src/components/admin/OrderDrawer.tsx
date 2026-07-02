@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, ArrowRight, XCircle, Loader2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, ArrowRight, XCircle, Loader2, ShoppingBag, MapPin, type LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ProductTone } from '@/components/storefront/ProductTone';
 import { StatusPill } from '@/components/admin/StatusPill';
@@ -10,6 +11,7 @@ import { updateOrderStatus } from '@/lib/adminOrders';
 import { formatStatus, nextStatuses } from '@/lib/orderStatus';
 import { getErrorMessage } from '@/lib/errors';
 import { money } from '@/lib/storefront';
+import { shortId } from '@/lib/utils';
 import { OrderStatus, type Order } from '@ecommerce/shared-types';
 
 interface OrderDrawerProps {
@@ -18,12 +20,14 @@ interface OrderDrawerProps {
   onUpdated: (order: Order) => void;
 }
 
-function shortId(id: string): string {
-  return id.slice(0, 8).toUpperCase();
-}
-
 export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
   const [busy, setBusy] = useState(false);
+  // Portal target: the admin <main> carries a transform (animate-page-in) which
+  // would otherwise anchor this `position: fixed` drawer to it instead of the
+  // viewport, so we render into document.body.
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -37,6 +41,9 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
   const canCancel = allowed.includes(OrderStatus.CANCELLED);
   const isCancelled = order.status === OrderStatus.CANCELLED;
   const itemCount = order.items.reduce((sum, it) => sum + it.quantity, 0);
+  const customerInitials = order.customer
+    ? `${order.customer.firstName.charAt(0)}${order.customer.lastName.charAt(0)}`.toUpperCase()
+    : '—';
 
   const changeStatus = async (next: OrderStatus) => {
     setBusy(true);
@@ -58,7 +65,9 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
   });
   const addr = order.shippingAddress;
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[310] flex animate-fade-in justify-end bg-[rgba(33,28,22,0.42)] backdrop-blur-sm"
       onClick={onClose}
@@ -70,25 +79,34 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
         className="flex h-screen w-full max-w-[480px] animate-drawer-in flex-col bg-maison-cream shadow-[-30px_0_80px_rgba(33,28,22,0.3)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* header */}
-        <div className="flex items-start justify-between border-b border-maison-line bg-white px-7 py-6 dark:bg-maison-panel">
-          <div className="min-w-0">
-            <div className="text-xs font-semibold tracking-[1.2px] text-maison-clay">
-              ORDER #{shortId(order.id)}
-            </div>
-            <div className="mt-1 truncate font-serif text-[26px] leading-tight text-maison-ink">
-              {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Customer'}
-            </div>
-            <div className="mt-1 truncate text-[13px] text-maison-subtle">
-              {order.customer?.email ? `${order.customer.email} · ` : ''}
-              {placedAt}
+        {/* header — a warm gradient band with the customer avatar */}
+        <div className="relative flex items-start justify-between overflow-hidden border-b border-maison-line bg-gradient-to-br from-[#FBF3E9] to-white px-7 py-6 dark:from-maison-panel dark:to-maison-panel">
+          <span
+            className="pointer-events-none absolute -left-10 -top-14 h-40 w-40 rounded-full bg-maison-clay opacity-[0.07] blur-2xl"
+            aria-hidden
+          />
+          <div className="relative flex min-w-0 items-center gap-3.5">
+            <span className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-maison-clay to-maison-clay-dark text-[19px] font-bold text-white shadow-[0_10px_24px_rgba(199,91,57,0.32)]">
+              {customerInitials}
+            </span>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold tracking-[1.2px] text-maison-clay">
+                ORDER #{shortId(order.id)}
+              </div>
+              <div className="mt-0.5 truncate font-serif text-[24px] leading-tight text-maison-ink">
+                {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Customer'}
+              </div>
+              <div className="mt-0.5 truncate text-[13px] text-maison-subtle">
+                {order.customer?.email ? `${order.customer.email} · ` : ''}
+                {placedAt}
+              </div>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-muted transition-colors hover:bg-[#E9DECF] dark:bg-maison-line dark:hover:bg-maison-stone"
+            className="relative flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-muted transition-colors hover:bg-[#E9DECF] dark:bg-maison-line dark:hover:bg-maison-stone"
           >
             <X className="h-[18px] w-[18px]" />
           </button>
@@ -142,59 +160,71 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
           )}
 
           {/* items */}
-          <div className="mb-3 mt-6 text-[12.5px] font-bold tracking-[0.8px] text-maison-subtle">ITEMS</div>
-          <div className="rounded-[16px] border border-maison-line bg-white px-[18px] py-1.5 dark:bg-maison-panel">
-            {order.items.map((it) => (
-              <div
-                key={it.id}
-                className="flex items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] last:border-0 dark:border-maison-line"
-              >
-                <ProductTone
-                  name={it.productName}
-                  initialClassName="text-[18px]"
-                  className="h-[46px] w-[46px] flex-shrink-0 rounded-[10px]"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-maison-ink">{it.productName}</div>
-                  {(it.selectedColor || it.selectedSize) && (
-                    <div className="text-[12px] text-maison-clay-dark">
-                      {[it.selectedColor, it.selectedSize].filter(Boolean).join(' · ')}
+          <SectionLabel icon={ShoppingBag}>
+            ITEMS
+            <span className="ml-auto rounded-full bg-[#F2EDE4] px-2 py-0.5 text-[11px] font-bold text-maison-subtle dark:bg-maison-line">
+              {itemCount}
+            </span>
+          </SectionLabel>
+          <div className="overflow-hidden rounded-[16px] border border-maison-line bg-white dark:bg-maison-panel">
+            <div className="px-[18px]">
+              {order.items.map((it) => (
+                <div
+                  key={it.id}
+                  className="flex items-center gap-3.5 border-b border-[#F2EDE4] py-[13px] last:border-0 dark:border-maison-line"
+                >
+                  <ProductTone
+                    name={it.productName}
+                    imageUrl={it.productImageUrl}
+                    initialClassName="text-[18px]"
+                    className="h-[46px] w-[46px] flex-shrink-0 rounded-[10px] ring-1 ring-maison-line"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-maison-ink">{it.productName}</div>
+                    {(it.selectedColor || it.selectedSize) && (
+                      <div className="text-[12px] text-maison-clay-dark">
+                        {[it.selectedColor, it.selectedSize].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+                    <div className="text-[12.5px] text-maison-subtle">
+                      {money(it.unitPrice)} × {it.quantity}
                     </div>
-                  )}
-                  <div className="text-[12.5px] text-maison-subtle">
-                    {money(it.unitPrice)} × {it.quantity}
                   </div>
+                  <div className="text-sm font-bold text-maison-ink tabular-nums">{money(it.lineTotal)}</div>
                 </div>
-                <div className="text-sm font-bold text-maison-ink">{money(it.lineTotal)}</div>
-              </div>
-            ))}
+              ))}
+            </div>
 
-            <div className="flex flex-col gap-2.5 py-3.5">
+            {/* totals — a tinted footer that anchors the card */}
+            <div className="flex flex-col gap-2.5 border-t border-maison-line bg-[#FBF7F1] px-[18px] py-4 dark:bg-[#221D17]">
               <Row label="Subtotal" value={money(order.subtotal)} />
               <Row label="Tax" value={money(order.tax)} />
               <Row
                 label="Shipping"
                 value={order.shippingCost === 0 ? 'Free' : money(order.shippingCost)}
               />
-              <div className="mt-0.5 flex items-center justify-between border-t border-maison-line pt-2.5 text-base">
-                <span className="font-bold text-maison-ink">Total</span>
-                <span className="font-extrabold text-maison-ink">{money(order.total)}</span>
+              <div className="mt-1 flex items-center justify-between border-t border-maison-line pt-3">
+                <span className="text-[15px] font-bold text-maison-ink">Total</span>
+                <span className="text-[19px] font-extrabold tabular-nums text-maison-clay">{money(order.total)}</span>
               </div>
             </div>
           </div>
 
           {/* shipping address */}
-          <div className="mb-3 mt-6 text-[12.5px] font-bold tracking-[0.8px] text-maison-subtle">
-            SHIP TO
-          </div>
-          <address className="rounded-[16px] border border-maison-line bg-white px-[18px] py-4 text-[13.5px] not-italic leading-relaxed text-maison-muted dark:bg-maison-panel">
-            <div className="font-semibold text-maison-ink">{addr.fullName}</div>
-            <div>{addr.line1}</div>
-            {addr.line2 && <div>{addr.line2}</div>}
-            <div>
-              {addr.city}, {addr.state} {addr.postalCode}
+          <SectionLabel icon={MapPin}>SHIP TO</SectionLabel>
+          <address className="flex gap-3.5 rounded-[16px] border border-maison-line bg-white px-[18px] py-4 not-italic dark:bg-maison-panel">
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-clay dark:bg-maison-line">
+              <MapPin className="h-[17px] w-[17px]" />
+            </span>
+            <div className="text-[13.5px] leading-relaxed text-maison-muted">
+              <div className="font-semibold text-maison-ink">{addr.fullName}</div>
+              <div>{addr.line1}</div>
+              {addr.line2 && <div>{addr.line2}</div>}
+              <div>
+                {addr.city}, {addr.state} {addr.postalCode}
+              </div>
+              <div>{addr.country}</div>
             </div>
-            <div>{addr.country}</div>
           </address>
 
           <div className="pb-2 pt-4 text-center text-xs text-maison-faint">
@@ -202,6 +232,17 @@ export function OrderDrawer({ order, onClose, onUpdated }: OrderDrawerProps) {
           </div>
         </div>
       </div>
+    </div>,
+    document.body,
+  );
+}
+
+/** Icon-led section heading, shared by the drawer's ITEMS and SHIP TO groups. */
+function SectionLabel({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
+  return (
+    <div className="mb-3 mt-6 flex items-center gap-2 text-[12.5px] font-bold tracking-[0.8px] text-maison-subtle">
+      <Icon className="h-4 w-4 text-maison-clay" />
+      {children}
     </div>
   );
 }

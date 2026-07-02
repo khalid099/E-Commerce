@@ -54,6 +54,14 @@ export class Review {
   @Column({ name: 'verified_purchase', default: false })
   verifiedPurchase: boolean;
 
+  // The store's public response to this review, set by an admin. Shown beneath
+  // the review on the product page.
+  @Column({ type: 'text', nullable: true })
+  reply: string | null;
+
+  @Column({ name: 'replied_at', type: 'timestamp', nullable: true })
+  repliedAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

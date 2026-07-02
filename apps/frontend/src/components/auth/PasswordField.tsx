@@ -45,7 +45,7 @@ export function PasswordField({
           aria-invalid={!!error}
           {...registration}
           className={cn(
-            'w-full rounded-xl border bg-[#FCFAF6] px-4 py-3.5 pr-11 text-[14.5px] text-maison-ink outline-none transition-all duration-200 placeholder:text-maison-faint focus:bg-white focus:ring-4 dark:bg-maison-cream dark:focus:bg-maison-cream',
+            'w-full rounded-xl border bg-[#FCFAF6] px-4 py-3.5 pr-11 text-[14.5px] text-maison-ink outline-none transition-all duration-200 placeholder:text-maison-faint focus:bg-white focus:shadow-[0_2px_10px_rgba(120,80,50,.06)] focus:ring-4 dark:bg-maison-cream dark:focus:bg-maison-cream',
             error
               ? 'border-maison-clay ring-4 ring-maison-clay/10'
               : 'border-maison-line-strong focus:border-maison-clay focus:ring-maison-clay/[.09]',

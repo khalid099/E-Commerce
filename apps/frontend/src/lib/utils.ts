@@ -5,9 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPrice(price: number | string): string {
-  return new Intl.NumberFormat('en-GB', {
-    style: 'currency',
-    currency: 'GBP',
-  }).format(Number(price));
+/** Short, display-friendly order/entity id, e.g. "A1B2C3D4". */
+export function shortId(id: string): string {
+  return id.slice(0, 8).toUpperCase();
 }

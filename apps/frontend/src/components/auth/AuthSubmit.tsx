@@ -19,7 +19,7 @@ export function AuthSubmit({ label, pendingLabel, pending = false, className }: 
       type="submit"
       disabled={pending}
       className={cn(
-        'group relative h-[52px] overflow-hidden rounded-full bg-[linear-gradient(180deg,#D2683F,#C0522F)] text-[15.5px] font-semibold text-white shadow-[0_12px_28px_rgba(199,91,57,.32)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(199,91,57,.42)] active:translate-y-0 active:shadow-[0_8px_20px_rgba(199,91,57,.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
+        'group relative h-[52px] overflow-hidden rounded-full bg-[linear-gradient(180deg,#D2683F,#C0522F)] text-[15.5px] font-semibold text-white shadow-[0_12px_28px_rgba(199,91,57,.32)] ring-1 ring-inset ring-white/15 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(199,91,57,.42)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maison-clay-dark focus-visible:ring-offset-2 focus-visible:ring-offset-white active:translate-y-0 active:shadow-[0_8px_20px_rgba(199,91,57,.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 dark:focus-visible:ring-offset-maison-panel',
         className,
       )}
     >

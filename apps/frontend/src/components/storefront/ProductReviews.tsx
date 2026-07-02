@@ -2,11 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { BadgeCheck, Pencil, Trash2 } from 'lucide-react';
-import { StarRating, StarRatingInput } from '@/components/ui/StarRating';
+import { StarRating } from '@/components/ui/StarRating';
+import { ReviewForm, type ReviewValues } from './ReviewForm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/authStore';
 import { useUiStore } from '@/store/uiStore';
@@ -15,6 +13,7 @@ import {
   listProductReviews,
   getProductReviewSummary,
   getMyProductReview,
+  getReviewEligibility,
   createProductReview,
   updateMyProductReview,
   deleteMyProductReview,
@@ -23,13 +22,6 @@ import { cn } from '@/lib/utils';
 import type { Review, ReviewSummary } from '@ecommerce/shared-types';
 
 const PAGE_SIZE = 5;
-
-const reviewSchema = z.object({
-  rating: z.number().min(1, 'Please select a rating').max(5),
-  title: z.string().max(120, 'Keep the title under 120 characters').optional(),
-  comment: z.string().max(2000, 'Keep the review under 2000 characters').optional(),
-});
-type ReviewValues = z.infer<typeof reviewSchema>;
 
 interface ProductReviewsProps {
   productId: string;
@@ -46,6 +38,7 @@ export function ProductReviews({ productId, onAggregateChange }: ProductReviewsP
   const [reviews, setReviews] = useState<Review[]>([]);
   const [meta, setMeta] = useState<{ page: number; totalPages: number } | null>(null);
   const [myReview, setMyReview] = useState<Review | null>(null);
+  const [canReview, setCanReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -71,11 +64,15 @@ export function ProductReviews({ productId, onAggregateChange }: ProductReviewsP
   useEffect(() => {
     if (!user) {
       setMyReview(null);
+      setCanReview(false);
       return;
     }
     getMyProductReview(productId)
       .then(setMyReview)
       .catch(() => setMyReview(null));
+    getReviewEligibility(productId)
+      .then((e) => setCanReview(e.canReview))
+      .catch(() => setCanReview(false));
   }, [user, productId]);
 
   const loadMore = async () => {
@@ -136,7 +133,7 @@ export function ProductReviews({ productId, onAggregateChange }: ProductReviewsP
 
   const count = summary?.count ?? 0;
   const average = summary?.average ?? 0;
-  const showForm = user && (!myReview || editing);
+  const showForm = user && canReview && (!myReview || editing);
 
   return (
     <section className="mt-[72px] border-t border-maison-line pt-12">
@@ -174,6 +171,8 @@ export function ProductReviews({ productId, onAggregateChange }: ProductReviewsP
             onSubmit={handleSubmit}
             onCancel={editing ? () => setEditing(false) : undefined}
           />
+        ) : !canReview ? (
+          <NotEligibleCard />
         ) : null}
       </div>
 
@@ -242,122 +241,6 @@ function SummaryPanel({
   );
 }
 
-function ReviewForm({
-  initial,
-  onSubmit,
-  onCancel,
-}: {
-  initial: Review | null;
-  onSubmit: (values: ReviewValues) => Promise<void>;
-  onCancel?: () => void;
-}) {
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<ReviewValues>({
-    resolver: zodResolver(reviewSchema),
-    defaultValues: {
-      rating: initial?.rating ?? 0,
-      title: initial?.title ?? '',
-      comment: initial?.comment ?? '',
-    },
-  });
-  const rating = watch('rating');
-
-  return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="rounded-2xl border border-maison-line bg-white px-6 py-6 dark:bg-maison-panel"
-    >
-      <div className="mb-5 font-serif text-[22px]">
-        {initial ? 'Edit your review' : 'Write a review'}
-      </div>
-
-      <div className="mb-5">
-        <label className="mb-2 block text-[12.5px] font-bold uppercase tracking-[.6px] text-maison-muted">
-          Your rating
-        </label>
-        <StarRatingInput
-          value={rating}
-          onChange={(v) => setValue('rating', v, { shouldValidate: true })}
-          disabled={isSubmitting}
-        />
-        {errors.rating && (
-          <p className="mt-1.5 text-[13px] text-maison-clay" role="alert">
-            {errors.rating.message}
-          </p>
-        )}
-      </div>
-
-      <div className="mb-4">
-        <label
-          htmlFor="review-title"
-          className="mb-2 block text-[12.5px] font-bold uppercase tracking-[.6px] text-maison-muted"
-        >
-          Title <span className="font-normal normal-case text-maison-faint">(optional)</span>
-        </label>
-        <input
-          id="review-title"
-          {...register('title')}
-          aria-invalid={!!errors.title}
-          placeholder="Sum up your experience"
-          className="w-full rounded-[10px] border border-maison-line-strong bg-white px-3.5 py-2.5 text-[14.5px] outline-none focus:border-maison-ink dark:bg-maison-cream"
-        />
-        {errors.title && (
-          <p className="mt-1.5 text-[13px] text-maison-clay" role="alert">
-            {errors.title.message}
-          </p>
-        )}
-      </div>
-
-      <div className="mb-5">
-        <label
-          htmlFor="review-comment"
-          className="mb-2 block text-[12.5px] font-bold uppercase tracking-[.6px] text-maison-muted"
-        >
-          Review <span className="font-normal normal-case text-maison-faint">(optional)</span>
-        </label>
-        <textarea
-          id="review-comment"
-          {...register('comment')}
-          aria-invalid={!!errors.comment}
-          rows={4}
-          placeholder="What did you like or dislike? How is the fit and quality?"
-          className="w-full resize-none rounded-[10px] border border-maison-line-strong bg-white px-3.5 py-2.5 text-[14.5px] leading-relaxed outline-none focus:border-maison-ink dark:bg-maison-cream"
-        />
-        {errors.comment && (
-          <p className="mt-1.5 text-[13px] text-maison-clay" role="alert">
-            {errors.comment.message}
-          </p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-full bg-maison-clay px-7 py-3 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(199,91,57,.28)] transition-all hover:-translate-y-0.5 disabled:opacity-60"
-        >
-          {isSubmitting ? 'Submitting…' : initial ? 'Save changes' : 'Submit review'}
-        </button>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="rounded-full border border-maison-line-strong px-6 py-3 text-[14px] font-semibold text-maison-ink transition-colors hover:border-maison-ink disabled:opacity-60"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
-    </form>
-  );
-}
-
 function YourReviewCard({
   review,
   onEdit,
@@ -398,6 +281,29 @@ function YourReviewCard({
       {review.comment && (
         <p className="text-[14.5px] leading-relaxed text-maison-muted">{review.comment}</p>
       )}
+      {review.reply && <StoreReply reply={review.reply} repliedAt={review.repliedAt} />}
+    </div>
+  );
+}
+
+function StoreReply({ reply, repliedAt }: { reply: string; repliedAt: string | null }) {
+  return (
+    <div className="mt-3.5 rounded-xl border-l-2 border-maison-clay bg-maison-clay/[0.05] px-4 py-3">
+      <div className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[.5px] text-maison-clay-dark">
+        <BadgeCheck className="h-4 w-4" />
+        Response from ShopHive
+        {repliedAt && (
+          <span className="ml-1 font-normal normal-case tracking-normal text-maison-subtle">
+            ·{' '}
+            {new Date(repliedAt).toLocaleDateString('en-US', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+        )}
+      </div>
+      <p className="mt-1.5 text-[14px] leading-relaxed text-maison-muted">{reply}</p>
     </div>
   );
 }
@@ -442,6 +348,7 @@ function ReviewItem({ review, isMine }: { review: Review; isMine: boolean }) {
             {review.comment}
           </p>
         )}
+        {review.reply && <StoreReply reply={review.reply} repliedAt={review.repliedAt} />}
       </div>
     </article>
   );
@@ -456,6 +363,17 @@ function EmptyState({ canWrite }: { canWrite: boolean }) {
         {canWrite
           ? 'Be the first to share your thoughts.'
           : 'Sign in to be the first to review this piece.'}
+      </p>
+    </div>
+  );
+}
+
+function NotEligibleCard() {
+  return (
+    <div className="rounded-2xl border border-maison-line bg-white px-6 py-6 text-center dark:bg-maison-panel">
+      <div className="mb-1 text-[15px] font-semibold">Reviews are for verified buyers</div>
+      <p className="text-[14.5px] text-maison-muted">
+        You can write a review once your order for this piece has been delivered.
       </p>
     </div>
   );

@@ -8,9 +8,14 @@ import { Cart } from '../cart/entities/cart.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Product } from '../products/entities/product.entity';
 import { PaymentsModule } from '../payments/payments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, OrderItem, Cart, CartItem, Product]), PaymentsModule],
+  imports: [
+    TypeOrmModule.forFeature([Order, OrderItem, Cart, CartItem, Product]),
+    PaymentsModule,
+    NotificationsModule,
+  ],
   controllers: [OrdersController, AdminOrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

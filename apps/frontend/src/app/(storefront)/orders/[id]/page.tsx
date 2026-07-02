@@ -3,28 +3,25 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, Star } from 'lucide-react';
 import { ProductTone } from '@/components/storefront/ProductTone';
 import { StatusBadge } from '@/components/storefront/StatusBadge';
+import { ReviewModal } from '@/components/storefront/ReviewModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import api from '@/lib/api';
 import { money } from '@/lib/storefront';
+import { FULFILMENT_STEPS } from '@/lib/orderStatus';
 import { cn } from '@/lib/utils';
 import type { Order, ApiResponse } from '@ecommerce/shared-types';
 import { OrderStatus } from '@ecommerce/shared-types';
-
-const STEPS: OrderStatus[] = [
-  OrderStatus.PENDING,
-  OrderStatus.PROCESSING,
-  OrderStatus.SHIPPED,
-  OrderStatus.DELIVERED,
-];
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<{ productId: string; productName: string } | null>(null);
+  const [reviewed, setReviewed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!id) return;
@@ -63,7 +60,7 @@ export default function OrderDetailPage() {
   }
 
   const addr = order.shippingAddress;
-  const currentIdx = STEPS.indexOf(order.status);
+  const currentIdx = FULFILMENT_STEPS.indexOf(order.status);
   const cancelled = order.status === OrderStatus.CANCELLED;
   // Delivered is terminal: the whole flow is complete, so no node is "in progress" —
   // the final step reads as a tick, not a highlighted step number.
@@ -99,7 +96,7 @@ export default function OrderDetailPage() {
           </div>
         ) : (
           <div className="flex items-start">
-            {STEPS.map((step, idx) => {
+            {FULFILMENT_STEPS.map((step, idx) => {
               const done = idx <= currentIdx;
               const current = idx === currentIdx && !complete;
               return (
@@ -118,7 +115,7 @@ export default function OrderDetailPage() {
                       {step.charAt(0) + step.slice(1).toLowerCase()}
                     </span>
                   </div>
-                  {idx < STEPS.length - 1 && (
+                  {idx < FULFILMENT_STEPS.length - 1 && (
                     <div className="mx-1.5 mt-[17px] h-[3px] flex-1 overflow-hidden rounded-full bg-[#EFE7DA] dark:bg-maison-line">
                       <div
                         className={cn('h-full rounded-full bg-maison-clay transition-all duration-500', idx < currentIdx ? 'w-full' : 'w-0')}
@@ -157,6 +154,18 @@ export default function OrderDetailPage() {
                   <p className="mt-0.5 text-xs text-maison-subtle">
                     {money(item.unitPrice)} × {item.quantity}
                   </p>
+                  {complete && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setReviewTarget({ productId: item.productId, productName: item.productName })
+                      }
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-maison-line-strong px-3 py-1.5 text-[12.5px] font-semibold text-maison-clay-dark transition-colors hover:border-maison-clay hover:text-maison-clay"
+                    >
+                      <Star className="h-3.5 w-3.5" />
+                      {reviewed.has(item.productId) ? 'Edit your review' : 'Write a review'}
+                    </button>
+                  )}
                 </div>
                 <span className="text-[15px] font-semibold tabular-nums">{money(item.lineTotal)}</span>
               </div>
@@ -202,6 +211,18 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {reviewTarget && (
+        <ReviewModal
+          productId={reviewTarget.productId}
+          productName={reviewTarget.productName}
+          open
+          onOpenChange={(next) => !next && setReviewTarget(null)}
+          onSaved={() =>
+            setReviewed((prev) => new Set(prev).add(reviewTarget.productId))
+          }
+        />
+      )}
     </main>
   );
 }

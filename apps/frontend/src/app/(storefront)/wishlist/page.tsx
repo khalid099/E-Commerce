@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { ProductCard } from '@/components/storefront/ProductCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWishlistStore } from '@/store/wishlistStore';
 
@@ -26,19 +26,12 @@ export default function WishlistPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-[22px] border border-maison-line bg-white px-5 py-24 text-center dark:bg-maison-panel">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-clay dark:bg-maison-cream">
-            <Heart className="h-7 w-7" />
-          </div>
-          <div className="mb-2 font-serif text-[30px]">Your wishlist is empty</div>
-          <p className="mb-[22px] text-maison-subtle">Tap the heart on any product to save it here.</p>
-          <Link
-            href="/products"
-            className="inline-block rounded-full bg-maison-clay px-7 py-3.5 font-semibold text-white"
-          >
-            Explore the shop
-          </Link>
-        </div>
+        <EmptyState
+          icon={Heart}
+          title="Your wishlist is empty"
+          description="Tap the heart on any product to save it here."
+          action={{ href: '/products', label: 'Explore the shop' }}
+        />
       ) : (
         <>
           <div className="mb-6 text-sm text-maison-subtle">

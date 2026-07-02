@@ -6,10 +6,33 @@ export interface Review {
   rating: number;
   title: string | null;
   comment: string | null;
-  /** True when the reviewer has a non-cancelled order containing this product. */
+  /** True when the reviewer has a delivered order containing this product. */
   verifiedPurchase: boolean;
+  /** The store's public reply to this review; null until an admin responds. */
+  reply: string | null;
+  /** When the store replied (ISO timestamp), or null. */
+  repliedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Whether the current customer is allowed to review a product. */
+export interface ReviewEligibility {
+  /** True once the customer has a delivered order containing this product. */
+  canReview: boolean;
+}
+
+/** A review as seen by an admin — carries the product it belongs to. */
+export interface AdminReview extends Review {
+  productName: string;
+}
+
+/** A review as seen by its author on their "my reviews" profile page. */
+export interface MyReview extends Review {
+  productName: string;
+  productImageUrl: string | null;
+  /** Identifier used to link back to the product page (the product has no separate slug). */
+  productSlug: string;
 }
 
 /** Aggregate rating breakdown for a product, driving the summary header + bars. */

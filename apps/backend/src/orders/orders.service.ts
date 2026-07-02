@@ -1,11 +1,12 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { Cart } from '../cart/entities/cart.entity';
@@ -15,12 +16,18 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { PaymentsService } from '../payments/payments.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 import type {
   Order as OrderResponse,
   PaginatedResponse,
 } from '@ecommerce/shared-types';
 
 const TAX_RATE = 0.1; // 10%
+
+// At or below this on-hand count, admins get a low-stock notification so the
+// product can be restocked before it sells out.
+const LOW_STOCK_THRESHOLD = 5;
 
 // Order lifecycle: each status may only advance to an allowed next state.
 // Empty array = terminal state.
@@ -34,6 +41,8 @@ const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
@@ -47,6 +56,7 @@ export class OrdersService {
     private readonly productRepo: Repository<Product>,
     private readonly dataSource: DataSource,
     private readonly paymentsService: PaymentsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private mapOrder(order: Order): OrderResponse {
@@ -120,7 +130,7 @@ export class OrdersService {
     }
     await this.paymentsService.assertPaid(dto.paymentIntentId, userId, total);
 
-    return this.dataSource.transaction(async (manager) => {
+    const created = await this.dataSource.transaction(async (manager) => {
       // Atomic stock decrement for each item — fail fast on insufficient stock
       for (const cartItem of cart.items) {
         const result = await manager
@@ -174,6 +184,53 @@ export class OrdersService {
 
       return this.mapOrder(savedOrder);
     });
+
+    // Notifications are best-effort and fire after the money-critical work has
+    // committed — a delivery hiccup must never fail or roll back a paid order.
+    await this.notifyOrderCreated(created);
+
+    return created;
+  }
+
+  /** Notify the customer, alert admins of the new order, and flag any low stock. */
+  private async notifyOrderCreated(order: OrderResponse): Promise<void> {
+    try {
+      await this.notificationsService.create({
+        userId: order.userId,
+        type: NotificationType.ORDER_PLACED,
+        title: 'Order confirmed',
+        message: `Your order #${order.id.slice(0, 8).toUpperCase()} has been placed successfully.`,
+        metadata: { orderId: order.id },
+      });
+
+      await this.notificationsService.notifyAdmins({
+        type: NotificationType.NEW_ORDER,
+        title: 'New order received',
+        message: `A new order totalling $${order.total.toFixed(2)} was just placed.`,
+        metadata: { orderId: order.id },
+      });
+
+      // Post-decrement stock check — warn admins about anything now running low.
+      const productIds = order.items.map((i) => i.productId);
+      if (productIds.length > 0) {
+        const products = await this.productRepo.find({ where: { id: In(productIds) } });
+        for (const product of products) {
+          if (product.stockQuantity <= LOW_STOCK_THRESHOLD) {
+            await this.notificationsService.notifyAdmins({
+              type: NotificationType.LOW_STOCK,
+              title: 'Low stock',
+              message: `"${product.name}" is down to ${product.stockQuantity} in stock.`,
+              metadata: { productId: product.id },
+            });
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to dispatch notifications for order ${order.id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
   }
 
   async findUserOrders(
@@ -282,6 +339,22 @@ export class OrdersService {
       }
       order.status = dto.status;
       await this.orderRepo.save(order);
+
+      // Keep the customer informed as their order advances through the lifecycle.
+      try {
+        await this.notificationsService.create({
+          userId: order.userId,
+          type: NotificationType.ORDER_STATUS_CHANGED,
+          title: 'Order update',
+          message: `Your order #${order.id.slice(0, 8).toUpperCase()} is now ${dto.status.toLowerCase()}.`,
+          metadata: { orderId: order.id, status: dto.status },
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to notify status change for order ${order.id}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
     }
 
     return this.mapOrder(order);

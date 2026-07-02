@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Minus, Plus, Trash2, ShoppingCart, ShieldCheck, RotateCcw } from 'lucide-react';
 import { ProductTone } from '@/components/storefront/ProductTone';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCartStore } from '@/store/cartStore';
 import { useUiStore } from '@/store/uiStore';
@@ -54,19 +55,12 @@ export default function CartPage() {
       {isLoading && !cart ? (
         <CartSkeleton />
       ) : !hasItems ? (
-        <div className="rounded-[22px] border border-maison-line bg-white px-5 py-24 text-center dark:bg-maison-panel">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#F4ECE0] text-maison-clay dark:bg-maison-cream">
-            <ShoppingCart className="h-7 w-7" />
-          </div>
-          <div className="mb-2 font-serif text-[30px]">Your cart is empty</div>
-          <p className="mb-[22px] text-maison-subtle">Discover something you&apos;ll love.</p>
-          <Link
-            href="/products"
-            className="inline-block rounded-full bg-maison-clay px-7 py-3.5 font-semibold text-white"
-          >
-            Start shopping
-          </Link>
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title="Your cart is empty"
+          description="Discover something you'll love."
+          action={{ href: '/products', label: 'Start shopping' }}
+        />
       ) : (
         <div className="grid items-start gap-8 lg:grid-cols-[1fr_360px]">
           <div className="flex flex-col gap-4">
